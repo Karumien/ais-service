@@ -1,0 +1,63 @@
+---
+swagger: "2.0"
+info:
+  description: "REST API for AIS\n"
+  version: "1.0.0"
+  title: "Attended Information System"
+basePath: "/api"
+schemes:
+- "http"
+paths:
+  /pass:
+    get:
+      summary: "Lists all pass"
+      description: "Lists all pass of users"
+      operationId: "getPass"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Pass"
+        400:
+          description: "Invalid status value"
+  /pass/{passId}:
+    get:
+      summary: "Find pass by ID"
+      description: "Returns a single pass"
+      operationId: "getPassById"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "passId"
+        in: "path"
+        description: "ID of pass to return"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Pass"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Pass not found"
+definitions:
+  Pass:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      category:
+        type: "string"
+      date:
+        type: "string"
+        format: "date-time"
+    example:
+      id: 8008282
+      category: "7"
+      date: "2017-07-21T17:32:28Z"
