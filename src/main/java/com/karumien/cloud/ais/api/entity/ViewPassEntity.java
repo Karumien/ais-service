@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2019-2029 Karumien s.r.o.
+ *
+ * Karumien s.r.o. is not responsible for defects arising from 
+ * unauthorized changes to the source code.
+ */
+package com.karumien.cloud.ais.api.entity;
+
+import java.time.OffsetDateTime;
+
+import javax.persistence.AttributeOverride;
+import javax.persistence.Column;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * Pass Entity - information about pass of User.
+ * 
+ * @author <a href="miroslav.svoboda@karumien.com">Miroslav Svoboda</a>
+ * @since 1.0, 15. 4. 2019 17:40:52 
+ */
+@Entity
+@Table(name = "VIEW_DATPRUCHUDAL")
+@Data
+@EqualsAndHashCode(of = "id")
+public class ViewPassEntity {
+	
+	@Id
+    private Integer id;
+
+	@Column(name = "ACTION_TYPE")
+    private String category;
+
+//	@Column(name = "ACTION_TYPE")
+//    private String categoryName;
+
+	@Column(name = "CHIP_CODE")
+	private String chip;
+
+	@Column(name = "ETIME")
+	private OffsetDateTime date;
+		
+	@Embedded
+    @AttributeOverride(name="code",column=@Column(name="PERSON_CODE"))
+    @AttributeOverride(name="name",column=@Column(name="PERSON_NAME"))
+    @AttributeOverride(name="department",column=@Column(name="DEPARTMENT_CODE"))
+	private ViewUserInfoEntity person;
+	
+}

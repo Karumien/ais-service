@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2019-2029 Karumien s.r.o.
+ *
+ * Karumien s.r.o. is not responsible for defects arising from 
+ * unauthorized changes to the source code.
+ */
+package com.karumien.cloud.ais.config;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.karumien.cloud.ais.api.entity.ViewPassEntity;
+import com.karumien.cloud.ais.api.entity.ViewUserInfoEntity;
+import com.karumien.cloud.ais.api.model.PassDTO;
+import com.karumien.cloud.ais.api.model.UserInfoDTO;
+
+/**
+ * Model Mapping Configuraton.
+ *
+ * @author <a href="miroslav.svoboda@karumien.com">Miroslav Svoboda</a>
+ * @since 1.0, 15. 4. 2019 19:16:12 
+ */
+@Configuration
+public class ModelMapperConfig {
+
+	@Bean
+	public ModelMapper modelMapper() {
+	    ModelMapper modelMapper = new ModelMapper();
+	    modelMapper.createTypeMap(ViewPassEntity.class, PassDTO.class);
+	    modelMapper.createTypeMap(ViewUserInfoEntity.class, UserInfoDTO.class);
+	    return modelMapper;	    
+	}
+	
+}
