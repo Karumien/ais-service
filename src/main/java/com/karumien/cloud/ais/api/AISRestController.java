@@ -69,9 +69,17 @@ public class AISRestController implements PassApi {
 	@RequestMapping(value = "/pass/onsite/html", produces = { "text/html" }, method = RequestMethod.GET)
 	@Deprecated
 	public String getUsersOnsiteHTML() {
-		StringBuilder sb = new StringBuilder("<table><tr><th>Středisko</th><th>Osoba</th></tr>");
-		getUsersOnsite().getBody().stream().forEach(p -> sb.append("<tr><td>").append(p.getPerson().getDepartment())
-				.append("</td><td>").append(p.getPerson().getName()).append("</td></tr>"));
+		StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\">");
+		
+		List<PassDTO> lines = getUsersOnsite().getBody();
+		
+		if (lines.isEmpty()) {
+			sb.append("<tr><td><p>Nenalezen žádný záznam.</p></td></tr>");
+		} else {
+			sb.append("<tr><td class=\"i24_tableHead menuline\">Středisko</th><td class=\"i24_tableHead menuline\">Osoba</th></tr>");
+			lines.stream().forEach(p -> sb.append("<tr><td class=\"i24_tableItem\">").append(p.getPerson().getDepartment())
+				.append("</td><td class=\"i24_tableItem\">").append(p.getPerson().getName()).append("</td></tr>"));
+		}
 		sb.append("</table>");
 		return sb.toString();
 	}

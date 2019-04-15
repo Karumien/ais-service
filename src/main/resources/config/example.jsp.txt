@@ -1,0 +1,34 @@
+<%@ page contentType="text/html;charset=utf-8" %>
+<%@ page language="java" %>
+<%@ taglib uri="/WEB-INF/struts-template.tld" prefix="template" %>
+<%@ taglib uri="/WEB-INF/struts-bean.tld" prefix="bean" %>
+<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+<%@ taglib uri="/WEB-INF/struts-logic.tld" prefix="logic" %>
+
+<%@ taglib uri="/WEB-INF/i24.tld" prefix="i24" %>
+<%@ taglib uri="/WEB-INF/i24-bean.tld" prefix="i24bean" %>
+<%@ taglib uri="/WEB-INF/i24-logic.tld" prefix="i24logic" %>
+<%@ taglib uri="/WEB-INF/i24-html.tld" prefix="i24html" %>
+
+<%@ taglib uri = "http://java.sun.com/jsp/jstl/core" prefix = "c" %>
+
+<table cellpadding="2" cellspacing="2" border="0" style="margin-left: 12px;" width="380">
+    <tbody><tr><td valign="top">
+
+<c:catch var="socketExceptionVariable">
+    <c:import var = "data" url = "http://localhost:8080/api/pass/onsite/html"/>
+    <c:out value = "${data}" escapeXml="false"/>
+</c:catch>
+
+<c:if test="${socketExceptionVariable != null}">
+    <p>Služba ADITUS nedostupná.</p>
+</c:if>
+
+   </td></tr></tbody></table>
+
+
+<br/>
+<h1>Osoby na VP (OnSite)</h1><br/>
+<jsp:include page="./vhp/aditus.jsp"/>
+
+
