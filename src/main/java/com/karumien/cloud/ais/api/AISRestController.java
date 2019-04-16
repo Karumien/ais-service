@@ -1,5 +1,6 @@
 package com.karumien.cloud.ais.api;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,12 +74,27 @@ public class AISRestController implements PassApi {
 		
 		List<PassDTO> lines = getUsersOnsite().getBody();
 		
+		boolean hrShowed = false;
+		
 		if (lines.isEmpty()) {
 			sb.append("<tr><td><p>Nenalezen žádný záznam.</p></td></tr>");
 		} else {
-			sb.append("<tr><td class=\"i24_tableHead menuline\">Středisko</th><td class=\"i24_tableHead menuline\">Osoba</th></tr>");
-			lines.stream().forEach(p -> sb.append("<tr><td class=\"i24_tableItem\">").append(p.getPerson().getDepartment())
-				.append("</td><td class=\"i24_tableItem\">").append(p.getPerson().getName()).append("</td></tr>"));
+			sb.append("<tr><td class=\"i24_tableHead menuline\">Čas</td><td class=\"i24_tableHead menuline\">Středisko</td><td class=\"i24_tableHead menuline\">Osoba</td><td class=\"i24_tableHead menuline\">Událost</td></tr>");
+			
+			for (PassDTO p : lines) {
+				
+				if (p.getCategoryId() != 1 && !hrShowed) {
+					hrShowed = true;
+					sb.append("<tr><td colspan=\"4\"><hr/></td></tr>");
+				}
+				
+				sb.append("<tr>")
+					.append("</td><td class=\"i24_tableItem\">").append(p.getDate().format(DateTimeFormatter.ofPattern("HH:mm")))
+					.append("</td><td class=\"i24_tableItem\">").append(p.getPerson().getDepartment())
+					.append("</td><td class=\"i24_tableItem\">").append(p.getCategoryId() == 1 ? "<b>" : "").append(p.getPerson().getName()).append(p.getCategoryId() == 1 ? "</b>" : "")
+					.append("</td><td class=\"i24_tableItem\">").append(p.getCategory())
+					.append("</td></tr>");
+			}
 		}
 		sb.append("</table>");
 		return sb.toString();

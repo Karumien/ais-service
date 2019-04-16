@@ -34,10 +34,10 @@ public class ViewPassEntity {
     private Integer id;
 
 	@Column(name = "ACTION_TYPE")
-    private String category;
+    private Integer categoryId;
 
-//	@Column(name = "ACTION_TYPE")
-//    private String categoryName;
+	@Column(name = "ACTION_NAME")
+	private String category;
 
 	@Column(name = "CHIP_CODE")
 	private String chip;
