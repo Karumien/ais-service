@@ -33,7 +33,7 @@ public interface ViewPassRepository extends JpaSpecificationExecutor<ViewPassEnt
 	 * 
 	 * @return {@link List} of {@link ViewPassEntity} which is onsite
 	 */
-	@Query(nativeQuery = true, value = "select * from VIEW_DATPRUCHUDAL_LAST where ACTION_TYPE <> 2 order by ACTION_TYPE")
+	@Query(nativeQuery = true, value = "select * from VIEW_DATPRUCHUDAL_LAST order by ACTION_TYPE")
 	List<ViewPassEntity> findAllOnsite();
 
 	/**
