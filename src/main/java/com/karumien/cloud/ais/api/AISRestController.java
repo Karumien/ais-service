@@ -91,7 +91,9 @@ public class AISRestController implements PassApi {
 				sb.append("<tr>")
 					.append("</td><td class=\"i24_tableItem\">").append(p.getDate().format(DateTimeFormatter.ofPattern("HH:mm")))
 					.append("</td><td class=\"i24_tableItem\">").append(p.getPerson() == null ? "" : p.getPerson().getDepartment())
-					.append("</td><td class=\"i24_tableItem\">").append(p.getCategoryId() == 1 ? "<b>" : "").append(p.getPerson() == null ? "<neznámý>" : p.getPerson().getName()).append(p.getCategoryId() == 1 ? "</b>" : "")
+					.append("</td><td class=\"i24_tableItem\">").append(p.getCategoryId() == 1 && p.getPerson() != null ? "<b>" : "")
+					.append(p.getPerson() == null ? "<i>&lt;neznámý&gt;</i>" : p.getPerson().getName())
+					.append(p.getCategoryId() == 1 && p.getPerson() != null ? "</b>" : "")
 					.append("</td><td class=\"i24_tableItem\">").append(p.getCategory())
 					.append("</td></tr>");
 			}
