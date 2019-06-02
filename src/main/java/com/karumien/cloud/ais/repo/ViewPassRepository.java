@@ -26,7 +26,7 @@ import com.karumien.cloud.ais.api.entity.ViewPass;
  * @since 1.0, 15. 4. 2019 17:10:32
  */
 @Repository
-public interface ViewPassRepository extends JpaSpecificationExecutor<ViewPass>, JpaRepository<ViewPass, Integer> {
+public interface ViewPassRepository extends JpaSpecificationExecutor<ViewPass>, JpaRepository<ViewPass, Long> {
 
 	/** 
 	 * Returns all users onsite.

@@ -13,6 +13,7 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
 
+import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
@@ -49,14 +50,6 @@ public interface AISService {
 	List<ViewPass> getPassOnsite();
 
 	/**
-	 * Returns specified {@link PassDTO} by {@code id}.
-	 * 
-	 * @param passId id of pass
-	 * @return {@link PassDTO} specified by {@code id}
-	 */
-	ViewPass getPassById(Integer passId);
-
-	/**
 	 * Return work month for specified user
 	 * 
 	 * @param year     year of work month
@@ -65,5 +58,13 @@ public interface AISService {
 	 * @return {@link WorkMonthDTO} work month of specified user
 	 */
 	WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username);
+
+	/**
+	 * Return known users list,
+	 * 
+	 * @param username
+	 * @return {@link List} of {@link UserInfo} known users
+	 */
+	List<UserInfo> getWorkUsers(@Valid String username);
 
 }

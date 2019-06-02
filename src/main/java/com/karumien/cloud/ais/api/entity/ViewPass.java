@@ -16,6 +16,8 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Immutable;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -29,12 +31,13 @@ import lombok.EqualsAndHashCode;
 @Table(name = "VIEW_DATPRUCHUDAL")
 @Data
 @EqualsAndHashCode(of = "id")
+@Immutable
 public class ViewPass implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
 	@Id
-    private Integer id;
+    private Long id;
 
 	@Column(name = "ACTION_TYPE")
     private Integer categoryId;

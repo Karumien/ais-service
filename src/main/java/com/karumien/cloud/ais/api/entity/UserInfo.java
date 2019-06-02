@@ -13,6 +13,11 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.Immutable;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 /**
  * UserInfo entity - information about User.
  *
@@ -21,12 +26,15 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "VIEW_DATZAMEST")
+@Immutable
+@Data
+@EqualsAndHashCode(of = "username")
 public class UserInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	private Integer id;
+	private Long id;
  
 	@Column(name = "OSCISLO")
 	private Integer code;

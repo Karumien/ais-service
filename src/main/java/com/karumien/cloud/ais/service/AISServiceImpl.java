@@ -29,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.entity.Work;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
@@ -38,6 +39,7 @@ import com.karumien.cloud.ais.api.model.WorkDayTypeDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
 import com.karumien.cloud.ais.api.model.WorkTypeDTO;
 import com.karumien.cloud.ais.exception.NoDataFoundException;
+import com.karumien.cloud.ais.repo.UserInfoRepository;
 import com.karumien.cloud.ais.repo.ViewPassRepository;
 import com.karumien.cloud.ais.repo.WorkRepository;
 
@@ -57,12 +59,29 @@ public class AISServiceImpl implements AISService {
 	private WorkRepository workRepository;
 	
 	@Autowired
+	private UserInfoRepository userInfoRepository;
+
+	@Autowired
 	private ModelMapper mapper;
 	
 	/** National Holidays */
-	private List<LocalDate> nationalHolidays = Arrays.asList(
-			LocalDate.of(2019, 5, 1), LocalDate.of(2019, 5, 8));
+	private static final List<LocalDate> NATIONAL_HOLIDAYS = Arrays.asList(
+			LocalDate.of(2019, 5, 1), 
+			LocalDate.of(2019, 5, 8),
+			LocalDate.of(2019, 7, 5),
+			LocalDate.of(2019, 10, 28),
+			LocalDate.of(2019, 12, 24),
+			LocalDate.of(2019, 12, 25),
+			LocalDate.of(2019, 12, 26)
+	);
 
+	/** Admins */
+	private static final List<String> ADMINS = Arrays.asList(			
+			"plzakova", 
+			"meduna"
+	);
+	
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -83,15 +102,6 @@ public class AISServiceImpl implements AISService {
 		return passRepository.findAllOnsite();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public ViewPass getPassById(Integer passId) {
-		return passRepository.findById(passId)
-				.orElseThrow(() -> new NoDataFoundException("NO.PASS", "No Pass for ID = " + passId));
-	}
 
 	/**
 	 * {@inheritDoc}
@@ -99,9 +109,8 @@ public class AISServiceImpl implements AISService {
 	@Override
 	@Transactional(readOnly = true)
 	public Page<ViewPass> getPass(String username) {
-		return username == null
-				? passRepository.findAll(PageRequest.of(0, 50))
-				: passRepository.findByUsername(username, PageRequest.of(0, 50));
+		return username == null ? passRepository.findAll(PageRequest.of(0, 50))
+			: passRepository.findByUsername(username, PageRequest.of(0, 50));
 	}
 
 	/**
@@ -120,7 +129,7 @@ public class AISServiceImpl implements AISService {
 		LocalDate dateFrom = LocalDate.of(year, month, 1);
 	    LocalDate dateTo = dateFrom.with(TemporalAdjusters.lastDayOfMonth());
 
-	    List<Work> works = workRepository.findByUsernameandDateRange(username, dateFrom, dateTo);
+	    List<Work> works = workRepository.findByUsernameAndDateRange(username, dateFrom, dateTo);
 	    boolean generateWorks = works.isEmpty();
 	    
 	    List<ViewPass> pass = passRepository.findByUsernameAndMonth(username, year, month);
@@ -128,7 +137,6 @@ public class AISServiceImpl implements AISService {
 		int sumWorkDays = 0;
 		int sumHolidays = 0;
 		long sumOnSiteMinutes = 0;
-
 
 		for (int day = 1; day <= dateTo.getDayOfMonth(); day++) {
 
@@ -240,7 +248,7 @@ public class AISServiceImpl implements AISService {
 
 	private WorkDayTypeDTO getWorkDayType(LocalDate date) {
 		
-		if (nationalHolidays.contains(date)) {
+		if (NATIONAL_HOLIDAYS.contains(date)) {
 			return WorkDayTypeDTO.NATIONAL_HOLIDAY;
 		}
 		
@@ -253,5 +261,18 @@ public class AISServiceImpl implements AISService {
 		}
 
 		return WorkDayTypeDTO.WORKDAY;
+	}
+
+	@Override
+	public List<UserInfo> getWorkUsers(@Valid String username) {
+
+		UserInfo selectedUser = userInfoRepository.findByUsername(username)
+			.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
+		
+		if (! ADMINS.contains(selectedUser.getUsername())) {
+			return Arrays.asList(selectedUser);
+		}
+		
+		return userInfoRepository.findAllOrderByUsername();
 	}
 }

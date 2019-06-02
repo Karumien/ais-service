@@ -48,15 +48,6 @@ public class AISPassRestController implements PassApi {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ResponseEntity<PassDTO> getPassById(Integer passId) {
-		return new ResponseEntity<>(
-			mapper.map(aisService.getPassById(passId), PassDTO.class), HttpStatus.OK);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public ResponseEntity<List<PassDTO>> getUsersOnsite() {
 		return new ResponseEntity<>(		
 			aisService.getPassOnsite().stream()
