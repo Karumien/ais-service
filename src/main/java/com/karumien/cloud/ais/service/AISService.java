@@ -6,12 +6,14 @@
  */
 package com.karumien.cloud.ais.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
@@ -69,5 +71,10 @@ public interface AISService {
 	 * @return {@link List} of {@link UserInfoDTO} known users
 	 */
 	List<UserInfoDTO> getWorkUsers(@Valid String username);
+
+	
+	@Deprecated
+	Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
+			@Valid String hours, @Valid Long id, @Valid String workType);
 
 }

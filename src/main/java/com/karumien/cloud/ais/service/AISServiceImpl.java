@@ -73,7 +73,7 @@ public class AISServiceImpl implements AISService {
 			LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26));
 
 	/** Admins */
-	private static final List<String> ADMINS = Arrays.asList("plzakova", "meduna");
+	private static final List<String> ADMINS = Arrays.asList("plzakova", "meduna", "SysAdmin", "Administrator");
 
 	/**
 	 * {@inheritDoc}
@@ -309,17 +309,53 @@ public class AISServiceImpl implements AISService {
 	@Transactional(readOnly = true)
 	public List<UserInfoDTO> getWorkUsers(@Valid String username) {
 
+		if (ADMINS.contains(username)) {
+			List<UserInfoDTO> users = userInfoRepository.findAllOrderByUsername().stream()
+					.map(user -> mapper.map(user, UserInfoDTO.class)).collect(Collectors.toList());
+			users.forEach(u -> u.setSelected(u.getUsername().equals(username)));
+			return users;
+		}
+		
 		UserInfo selectedUser = userInfoRepository.findByUsername(username)
 				.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
 
-		if (!ADMINS.contains(selectedUser.getUsername())) {
-			return Arrays.asList(mapper.map(selectedUser, UserInfoDTO.class));
+		return Arrays.asList(mapper.map(selectedUser, UserInfoDTO.class));
+	}
+
+	@Override
+	public Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username, @Valid String hours,
+			@Valid Long id, @Valid String workType) {
+
+		Work work = null;
+		
+		Double workHours = null;
+		try {
+			workHours = (hours == null || hours.trim().length() == 0) ? null : Double.valueOf(hours.replace(',', '.').trim());
+		} catch (Exception e) {
 		}
 
-		List<UserInfoDTO> users = userInfoRepository.findAllOrderByUsername().stream()
-				.map(user -> mapper.map(user, UserInfoDTO.class)).collect(Collectors.toList());
-		users.forEach(u -> u.setSelected(u.getUsername().equals(username)));
+		if (id != null && (workHours == null || workType == null)) {
+			workRepository.deleteById(id);
+			return null;
+		}
+		
+		if (workHours == null || workType == null) {
+			return null;
+		}
+			
+		if (id != null) {
+			work = workRepository.findById(id).orElse(null);
+		} 
+		
+		if (work == null) {
+			work = new Work();
+			work.setDate(date);
+			work.setUsername(username);
+			work.setWorkDayType(getWorkDayType(date));
+		}
 
-		return users;
+		work.setWorkType(WorkTypeDTO.fromValue(workType));
+		work.setHours(BigDecimal.valueOf(workHours).setScale(2, RoundingMode.FLOOR).doubleValue());
+		return workRepository.save(work).getId();
 	}
 }

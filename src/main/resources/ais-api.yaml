@@ -51,6 +51,50 @@ paths:
               $ref: '#/definitions/Pass'
         '400':
           description: Invalid status value
+  '/work/update':
+    post:
+      summary: Find workdays in month for specified user
+      operationId: setWork
+      produces:
+        - application/json
+      parameters:
+        - name: date
+          in: query
+          description: Year for month of workdays
+          required: true
+          type: string
+          format: date
+        - name: hours
+          in: query
+          required: false
+          type: string
+        - name: id
+          in: query
+          description: Year for month of workdays
+          required: false
+          type: integer
+          format: int64
+        - name: username
+          in: query
+          description: Filtering by username
+          required: true
+          type: string
+        - name: workType
+          in: query
+          description: Year for month of workdays
+          required: false
+          type: string
+          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            type: integer
+            format: int64
+        '400':
+          description: Invalid date
+        '404':
+          description: User not found
   '/work':
     get:
       summary: Find workdays in month for specified user

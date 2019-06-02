@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.karumien.cloud.ais.api.entity.Work;
 import com.karumien.cloud.ais.api.handler.WorkApi;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkDTO;
@@ -239,5 +240,10 @@ public class AISWorkRestController implements WorkApi {
 		return "<span style=\"color:" + (work.isCorrected() ? "#888888":"#000") +"\">" +
 				work.getDate().format(DateTimeFormatter.ofPattern("HH:mm")) + "</span>";
 	}
-
+	
+	@Override
+	public ResponseEntity<Long> setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
+			@Valid String hours, @Valid Long id, @Valid String workType) {
+		return new ResponseEntity<>(aisService.setWork(date, username, hours, id, workType), HttpStatus.OK);
+	}	
 }
