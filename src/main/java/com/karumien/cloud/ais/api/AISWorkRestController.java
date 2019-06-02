@@ -95,7 +95,7 @@ public class AISWorkRestController implements WorkApi {
 		}		
 		
 		StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
-				(Boolean.TRUE.equals(redirect) ? "/ais.jsp" : "/api/work/html") + "\" method=\"get\">");
+				(Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
 		sb.append("<tr><td colspan=\"7\"><select name=\"month\" onchange=\"this.form.submit()\">");
 		
 		List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
