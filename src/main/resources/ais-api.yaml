@@ -169,9 +169,7 @@ definitions:
       type: WORK
   WorkDay:
     type: object
-    properties:
-      id:
-        type: integer
+    properties:     
       date:
         type: string
         format: date
@@ -215,8 +213,6 @@ definitions:
   WorkMonth:
     type: object
     properties:
-      id:
-        type: integer
       year:
         type: integer
       month:
@@ -240,7 +236,6 @@ definitions:
         type: number
         format: double
     example:
-      id: 282
       year: 2017
       month: 1     
       workDays:

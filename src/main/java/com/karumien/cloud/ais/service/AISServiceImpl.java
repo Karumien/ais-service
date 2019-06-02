@@ -112,7 +112,6 @@ public class AISServiceImpl implements AISService {
 	public WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username) {
 		
 		WorkMonthDTO workMonth = new WorkMonthDTO();
-		workMonth.setId(year*100 + month);
 		workMonth.setUserInfo(new UserInfoDTO());
 		workMonth.getUserInfo().setUsername(username);
 		workMonth.setMonth(month);
