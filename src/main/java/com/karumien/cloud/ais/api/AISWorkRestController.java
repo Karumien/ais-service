@@ -96,7 +96,7 @@ public class AISWorkRestController implements WorkApi {
 		
 		StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
 				(Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
-		sb.append("<tr><td colspan=\"7\"><select name=\"month\" onchange=\"this.form.submit()\">");
+		sb.append("<tr><td colspan=\"7\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
 		
 		List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
 				"červenec", "srpen", "září", "říjen", "listopad", "prosinec");
@@ -104,9 +104,9 @@ public class AISWorkRestController implements WorkApi {
 			sb.append("<option value=\"").append(i+1).append("\"").append(month.equals(i+1) ? " selected" : "");
 			sb.append(">").append(months.get(i)).append("</option>");
 		}
-		sb.append("</select><select><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\"></td>");
+		sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\"></td>");
 		
-		sb.append("<td align=\"right\"><select name=\"username\" onchange=\"this.form.submit()\">");
+		sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
 		for (UserInfoDTO user : aisService.getWorkUsers(role)) {
 			sb.append("<option value=\"").append(user.getUsername()).append("\"").append(username.equals(user.getUsername()) ? " selected" : "");
 			sb.append(">").append(user.getName()).append("</option>");			
@@ -126,6 +126,7 @@ public class AISWorkRestController implements WorkApi {
 		for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
 			
 			sb.append("<tr>");
+			sb.append("<tr><td colspan=\"8\"><br></td></tr>");
 			sb.append("<td class=\"i24_tableItem\"><i>").append(workDay.getDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).append("</i></td>");
 			sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
 			sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
@@ -146,7 +147,8 @@ public class AISWorkRestController implements WorkApi {
 						work = workDay.getWorks().get(a);
 					}
 					
-					sb.append("<td class=\"i24_tableItem\"><input type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"").append(work != null ? hours(work.getHours()) : "").append("\"><select>");
+					sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"").append(work != null ? hours(work.getHours()) : "")
+						.append("\"><select class=\"unvisiblelines\">");
 					for (WorkTypeDTO type: WorkTypeDTO.values()) {
 						sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType() == type ? " selected" : "");
 						sb.append(">").append(getDescription(type)).append("</option>");
@@ -161,7 +163,7 @@ public class AISWorkRestController implements WorkApi {
 				sb.append("<tr><td colspan=\"8\"><hr/></td></tr>");
 			}
 		}
-		sb.append("<tr><td colspan=\"8\" align=\"right\"><input type=\"submit\" value=\"Uložit změny\"></td></tr>");
+		sb.append("<tr><td colspan=\"8\" align=\"right\"><input type=\"submit\" class=\"buttonSubmit\" value=\"Uložit\"></td></tr>");
 		sb.append("</form></table>");
 
 		
