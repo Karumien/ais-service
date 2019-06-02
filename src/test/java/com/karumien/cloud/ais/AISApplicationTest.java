@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.karumien.cloud.ais.api.entity.UserInfo;
+import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
 import com.karumien.cloud.ais.exception.NoDataFoundException;
 import com.karumien.cloud.ais.service.AISService;
@@ -36,7 +37,7 @@ public class AISApplicationTest {
 
 	@Test
 	public void getUsers() {
-		List<UserInfo> users = aisService.getWorkUsers("meduna");
+		List<UserInfoDTO> users = aisService.getWorkUsers("meduna");
 		assertNotNull(users);
 		assertTrue("Exists users", ! users.isEmpty());	
 		assertTrue("Exists more users", users.size() > 1);	
@@ -49,7 +50,7 @@ public class AISApplicationTest {
 
 	@Test(expected = NoDataFoundException.class)
 	public void getUserNoExisted() {
-		List<UserInfo> users = aisService.getWorkUsers("nekdo");
+		List<UserInfoDTO> users = aisService.getWorkUsers("nekdo");
 		assertNull(users);
 	}
 	

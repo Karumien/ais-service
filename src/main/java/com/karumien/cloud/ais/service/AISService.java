@@ -13,9 +13,9 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
 
-import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
+import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
 
 /**
@@ -25,6 +25,9 @@ import com.karumien.cloud.ais.api.model.WorkMonthDTO;
  * @since 1.0, 15. 4. 2019 17:09:02
  */
 public interface AISService {
+	
+	/** Hours in work day 7.5 vs 8.0 */
+	double HOURS_IN_DAY = 8d;
 
 	/**
 	 * Returns passes filtered by user (optional).
@@ -63,8 +66,8 @@ public interface AISService {
 	 * Return known users list,
 	 * 
 	 * @param username
-	 * @return {@link List} of {@link UserInfo} known users
+	 * @return {@link List} of {@link UserInfoDTO} known users
 	 */
-	List<UserInfo> getWorkUsers(@Valid String username);
+	List<UserInfoDTO> getWorkUsers(@Valid String username);
 
 }

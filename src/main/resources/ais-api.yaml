@@ -51,7 +51,7 @@ paths:
               $ref: '#/definitions/Pass'
         '400':
           description: Invalid status value
-  '/work/{year}/{month}':
+  '/work':
     get:
       summary: Find workdays in month for specified user
       description: Returns workdays of specified month
@@ -60,14 +60,14 @@ paths:
         - application/json
       parameters:
         - name: year
-          in: path
+          in: query
           description: Year for month of workdays
-          required: true
+          required: false
           type: integer
         - name: month
-          in: path
+          in: query
           description: Year for month of workdays
-          required: true
+          required: false
           type: integer
         - name: username
           in: query
@@ -169,6 +169,15 @@ definitions:
       id: 20
       hours: 4.0
       type: WORK
+  WorkHour:
+    type: object
+    properties:     
+      date:
+        type: string
+        format: date-time
+      corrected:
+        type: boolean
+        default: false
   WorkDay:
     type: object
     properties:     
@@ -178,17 +187,13 @@ definitions:
       workDayType: 
         $ref: "#/definitions/WorkDayType"
       workStart:
-        type: string
-        format: date-time
+        $ref: "#/definitions/WorkHour"
       lunchStart:
-        type: string
-        format: date-time
+        $ref: "#/definitions/WorkHour"
       lunchEnd:
-        type: string
-        format: date-time
+        $ref: "#/definitions/WorkHour"
       workEnd:
-        type: string
-        format: date-time
+        $ref: "#/definitions/WorkHour"
       workedHours:
         type: number
         format: double

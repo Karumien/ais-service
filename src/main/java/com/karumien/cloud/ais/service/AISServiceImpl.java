@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkDTO;
 import com.karumien.cloud.ais.api.model.WorkDayDTO;
 import com.karumien.cloud.ais.api.model.WorkDayTypeDTO;
+import com.karumien.cloud.ais.api.model.WorkHourDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
 import com.karumien.cloud.ais.api.model.WorkTypeDTO;
 import com.karumien.cloud.ais.exception.NoDataFoundException;
@@ -47,49 +50,38 @@ import com.karumien.cloud.ais.repo.WorkRepository;
  * Service implements {@link AISService}.
  *
  * @author <a href="miroslav.svoboda@karumien.com">Miroslav Svoboda</a>
- * @since 1.0, 15. 4. 2019 17:08:42 
+ * @since 1.0, 15. 4. 2019 17:08:42
  */
 @Service
 public class AISServiceImpl implements AISService {
-	
+
 	@Autowired
 	private ViewPassRepository passRepository;
-	
+
 	@Autowired
 	private WorkRepository workRepository;
-	
+
 	@Autowired
 	private UserInfoRepository userInfoRepository;
 
 	@Autowired
 	private ModelMapper mapper;
-	
+
 	/** National Holidays */
-	private static final List<LocalDate> NATIONAL_HOLIDAYS = Arrays.asList(
-			LocalDate.of(2019, 5, 1), 
-			LocalDate.of(2019, 5, 8),
-			LocalDate.of(2019, 7, 5),
-			LocalDate.of(2019, 10, 28),
-			LocalDate.of(2019, 12, 24),
-			LocalDate.of(2019, 12, 25),
-			LocalDate.of(2019, 12, 26)
-	);
+	private static final List<LocalDate> NATIONAL_HOLIDAYS = Arrays.asList(LocalDate.of(2019, 5, 1),
+			LocalDate.of(2019, 5, 8), LocalDate.of(2019, 7, 5), LocalDate.of(2019, 10, 28), LocalDate.of(2019, 12, 24),
+			LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26));
 
 	/** Admins */
-	private static final List<String> ADMINS = Arrays.asList(			
-			"plzakova", 
-			"meduna"
-	);
-	
-	
+	private static final List<String> ADMINS = Arrays.asList("plzakova", "meduna");
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	@Transactional(readOnly = true)
 	public Page<ViewPass> getPass(Integer userCode) {
-		return userCode == null
-				? passRepository.findAll(PageRequest.of(0, 50))
+		return userCode == null ? passRepository.findAll(PageRequest.of(0, 50))
 				: passRepository.findByUserCode(userCode, PageRequest.of(0, 50));
 	}
 
@@ -102,7 +94,6 @@ public class AISServiceImpl implements AISService {
 		return passRepository.findAllOnsite();
 	}
 
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -110,7 +101,7 @@ public class AISServiceImpl implements AISService {
 	@Transactional(readOnly = true)
 	public Page<ViewPass> getPass(String username) {
 		return username == null ? passRepository.findAll(PageRequest.of(0, 50))
-			: passRepository.findByUsername(username, PageRequest.of(0, 50));
+				: passRepository.findByUsername(username, PageRequest.of(0, 50));
 	}
 
 	/**
@@ -119,7 +110,15 @@ public class AISServiceImpl implements AISService {
 	@Override
 	@Transactional
 	public WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username) {
-		
+
+		if (year == null) {
+			year = LocalDate.now().getYear();
+		}
+
+		if (month == null) {
+			month = LocalDate.now().getMonthValue();
+		}
+
 		WorkMonthDTO workMonth = new WorkMonthDTO();
 		workMonth.setUserInfo(new UserInfoDTO());
 		workMonth.getUserInfo().setUsername(username);
@@ -127,13 +126,13 @@ public class AISServiceImpl implements AISService {
 		workMonth.setYear(year);
 
 		LocalDate dateFrom = LocalDate.of(year, month, 1);
-	    LocalDate dateTo = dateFrom.with(TemporalAdjusters.lastDayOfMonth());
+		LocalDate dateTo = dateFrom.with(TemporalAdjusters.lastDayOfMonth());
 
-	    List<Work> works = workRepository.findByUsernameAndDateRange(username, dateFrom, dateTo);
-	    boolean generateWorks = works.isEmpty();
-	    
-	    List<ViewPass> pass = passRepository.findByUsernameAndMonth(username, year, month);
-	    	    
+		List<Work> works = workRepository.findByUsernameAndDateRange(username, dateFrom, dateTo);
+		boolean generateWorks = works.isEmpty();
+
+		List<ViewPass> pass = passRepository.findByUsernameAndMonth(username, year, month);
+
 		int sumWorkDays = 0;
 		int sumHolidays = 0;
 		long sumOnSiteMinutes = 0;
@@ -142,29 +141,27 @@ public class AISServiceImpl implements AISService {
 
 			final int daySelected = day;
 			LocalDate date = LocalDate.of(year, month, day);
-			
+
 			WorkDayDTO workDay = new WorkDayDTO();
 			workDay.setDate(date);
-			workDay.setWorks(works.stream()
-					.filter(w -> w.getDate().equals(date))
-					.map(w -> mapper.map(w, WorkDTO.class))
-					.collect(Collectors.toList()));			
+			workDay.setWorks(works.stream().filter(w -> w.getDate().equals(date)).map(w -> mapper.map(w, WorkDTO.class))
+					.collect(Collectors.toList()));
 			workDay.setWorkDayType(getWorkDayType(date));
-			
+
 			List<ViewPass> passDays = pass.stream().filter(p -> p.getDay().equals(daySelected))
 					.collect(Collectors.toList());
 
 			if (workDay.getWorkDayType() == WorkDayTypeDTO.NATIONAL_HOLIDAY) {
 				sumHolidays++;
 			}
-			
+
 			if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY) {
 				sumWorkDays++;
 				if (generateWorks) {
 					Work work = new Work();
 					work.setUsername(username);
 					work.setDate(date);
-					work.setHours(8d);
+					work.setHours(AISService.HOURS_IN_DAY);
 					work.setWorkDayType(WorkDayTypeDTO.WORKDAY);
 					work.setWorkType(WorkTypeDTO.WORK);
 					workRepository.save(work);
@@ -179,9 +176,9 @@ public class AISServiceImpl implements AISService {
 
 			ViewPass lastIn = null;
 			long workedMinutes = 0;
-			
+
 			for (ViewPass passDay : passDays) {
-				
+
 				// come in or come to trip
 				if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && lastIn == null) {
 					lastIn = passDay;
@@ -191,17 +188,18 @@ public class AISServiceImpl implements AISService {
 						lastIn = null;
 					}
 				}
-				
+
 				// come from lunch
-				if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && lunchStart != null && lunchEnd == null) {
+				if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && lunchStart != null
+						&& lunchEnd == null) {
 					lunchEnd = passDay;
 				}
-				
+
 				// come in first to work
 				if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && workStart == null) {
 					workStart = passDay;
 				}
-				
+
 				// lunch
 				if (passDay.getCategoryId() == 7 && lunchStart == null) {
 					lunchStart = passDay;
@@ -212,50 +210,91 @@ public class AISServiceImpl implements AISService {
 				}
 			}
 
-			workDay.setWorkStart(workStart != null ? workStart.getDate() : null);
-			workDay.setLunchStart(lunchStart != null ? lunchStart.getDate() : null);
-			workDay.setLunchEnd(lunchEnd != null ? lunchEnd.getDate() : null);
-			workDay.setWorkEnd(workEnd != null ? workEnd.getDate() : null);
-			
-			workDay.setWorkedHours(
-					workStart == null ? null :
-					BigDecimal.valueOf(workedMinutes / 60d).setScale(2, RoundingMode.FLOOR).doubleValue());
+			if (workStart != null) {
+				workDay.setWorkStart(new WorkHourDTO());
+				workDay.getWorkStart().setDate(workStart.getDate());
+			}
+			if (workEnd != null) {
+				workDay.setWorkEnd(new WorkHourDTO());
+				workDay.getWorkEnd().setDate(workEnd.getDate());
+			}
+			if (lunchStart != null) {
+				workDay.setLunchStart(new WorkHourDTO());
+				workDay.getLunchStart().setDate(lunchStart.getDate());
+			}
+			if (lunchEnd != null) {
+				workDay.setLunchEnd(new WorkHourDTO());
+				workDay.getLunchEnd().setDate(lunchEnd.getDate());
+			}
+
+			// corrections
+			if (workStart != null && workEnd == null && lastIn != null) {
+				workDay.setWorkEnd(new WorkHourDTO());
+				workDay.getWorkEnd().setDate(OffsetDateTime.of(LocalDateTime.of(year, month, day, 16, 00),
+						OffsetDateTime.now().getOffset()));
+				workDay.getWorkEnd().setCorrected(true);
+				workedMinutes += lastIn.getDate().until(workDay.getWorkEnd().getDate(), ChronoUnit.MINUTES);
+			}
+			if (lunchStart != null && lunchEnd == null) {
+				workDay.setLunchEnd(new WorkHourDTO());
+				workDay.getLunchEnd().setDate(lunchStart.getDate().plusMinutes(30));
+				workDay.getLunchEnd().setCorrected(true);
+				workedMinutes -= 30;
+			}
+			if (lunchStart == null && lunchEnd == null && workStart != null) {
+				workDay.setLunchStart(new WorkHourDTO());
+				workDay.getLunchStart().setDate(OffsetDateTime.of(LocalDateTime.of(year, month, day, 11, 00),
+						OffsetDateTime.now().getOffset()));
+				workDay.getLunchStart().setCorrected(true);
+				workDay.setLunchEnd(new WorkHourDTO());
+				workDay.getLunchEnd().setDate(workDay.getLunchStart().getDate().plusMinutes(30));
+				workDay.getLunchEnd().setCorrected(true);
+				workedMinutes -= 30;
+			}
+			OffsetDateTime realStart = OffsetDateTime.of(LocalDateTime.of(year, month, day, 6, 30), OffsetDateTime.now().getOffset());
+			if (workStart != null && workStart.getDate().isBefore(realStart)) {
+				workDay.getWorkStart().setCorrected(true);
+				workedMinutes -= workDay.getWorkStart().getDate().until(realStart, ChronoUnit.MINUTES);
+				workDay.getWorkStart().setDate(realStart);
+			}
+
+			workDay.setWorkedHours(workStart == null ? null
+					: BigDecimal.valueOf(workedMinutes / 60d).setScale(2, RoundingMode.FLOOR).doubleValue());
 			sumOnSiteMinutes += workedMinutes;
-			workMonth.addWorkDaysItem(workDay);		
+			workMonth.addWorkDaysItem(workDay);
 		}
-		
+
 		Map<WorkTypeDTO, WorkDTO> sums = new HashMap<>();
-		works.stream()
-			.filter(w -> w.getWorkType() != null && w.getWorkType() != WorkTypeDTO.NONE && w.getHours() != null && w.getHours() > 0)
-			.forEach(w -> {
-			
-				WorkDTO sum = sums.get(w.getWorkType());
-				if (sum == null) {
-					sum = new WorkDTO();
-					sum.setWorkType(w.getWorkType());
-					sum.setHours(0d);
-					sums.put(w.getWorkType(), sum);
-				}
-				sum.setHours(sum.getHours().doubleValue() + w.getHours().doubleValue());
-			});
+		works.stream().filter(w -> w.getWorkType() != null && w.getWorkType() != WorkTypeDTO.NONE
+				&& w.getHours() != null && w.getHours() > 0).forEach(w -> {
+					WorkDTO sum = sums.get(w.getWorkType());
+					if (sum == null) {
+						sum = new WorkDTO();
+						sum.setWorkType(w.getWorkType());
+						sum.setHours(0d);
+						sums.put(w.getWorkType(), sum);
+					}
+					sum.setHours(sum.getHours().doubleValue() + w.getHours().doubleValue());
+				});
 
 		workMonth.setSums(new ArrayList<>(sums.values()));
 		workMonth.setSumHolidays(sumHolidays);
 		workMonth.setSumWorkDays(sumWorkDays);
-		workMonth.setSumOnSiteDays(BigDecimal.valueOf(sumOnSiteMinutes / 60d / 8d).setScale(2, RoundingMode.FLOOR).doubleValue());
+		workMonth.setSumOnSiteDays(BigDecimal.valueOf(sumOnSiteMinutes / 60d / AISService.HOURS_IN_DAY)
+				.setScale(2, RoundingMode.FLOOR).doubleValue());
 		return workMonth;
 	}
 
 	private WorkDayTypeDTO getWorkDayType(LocalDate date) {
-		
+
 		if (NATIONAL_HOLIDAYS.contains(date)) {
 			return WorkDayTypeDTO.NATIONAL_HOLIDAY;
 		}
-		
+
 		if (date.getDayOfWeek() == DayOfWeek.SATURDAY) {
 			return WorkDayTypeDTO.SATURDAY;
 		}
-	
+
 		if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
 			return WorkDayTypeDTO.SUNDAY;
 		}
@@ -263,16 +302,24 @@ public class AISServiceImpl implements AISService {
 		return WorkDayTypeDTO.WORKDAY;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public List<UserInfo> getWorkUsers(@Valid String username) {
+	@Transactional(readOnly = true)
+	public List<UserInfoDTO> getWorkUsers(@Valid String username) {
 
 		UserInfo selectedUser = userInfoRepository.findByUsername(username)
-			.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
-		
-		if (! ADMINS.contains(selectedUser.getUsername())) {
-			return Arrays.asList(selectedUser);
+				.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
+
+		if (!ADMINS.contains(selectedUser.getUsername())) {
+			return Arrays.asList(mapper.map(selectedUser, UserInfoDTO.class));
 		}
-		
-		return userInfoRepository.findAllOrderByUsername();
+
+		List<UserInfoDTO> users = userInfoRepository.findAllOrderByUsername().stream()
+				.map(user -> mapper.map(user, UserInfoDTO.class)).collect(Collectors.toList());
+		users.forEach(u -> u.setSelected(u.getUsername().equals(username)));
+
+		return users;
 	}
 }
