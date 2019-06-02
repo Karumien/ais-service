@@ -6,6 +6,8 @@
  */
 package com.karumien.cloud.ais.api.entity;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
@@ -19,11 +21,10 @@ import lombok.Data;
  */
 @Embeddable
 @Data
-public class ViewUserInfoEntity {
+public class ViewUserInfo implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 	
-//	@Id
-//	private Integer id;
- 
 	@Column(name = "PERSON_CODE")
 	private Integer code;
 
@@ -32,5 +33,8 @@ public class ViewUserInfoEntity {
 	  	
 	@Column(name = "DEPARTMENT_CODE")
 	private String department;
-	
+
+	@Column(name = "USERNAMR")
+	private String username;
+
 }

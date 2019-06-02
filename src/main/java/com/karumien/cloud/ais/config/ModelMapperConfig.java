@@ -10,8 +10,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.karumien.cloud.ais.api.entity.ViewPassEntity;
-import com.karumien.cloud.ais.api.entity.ViewUserInfoEntity;
+import com.karumien.cloud.ais.api.entity.ViewPass;
+import com.karumien.cloud.ais.api.entity.ViewUserInfo;
 import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
 
@@ -27,8 +27,8 @@ public class ModelMapperConfig {
 	@Bean
 	public ModelMapper modelMapper() {
 	    ModelMapper modelMapper = new ModelMapper();
-	    modelMapper.createTypeMap(ViewPassEntity.class, PassDTO.class);
-	    modelMapper.createTypeMap(ViewUserInfoEntity.class, UserInfoDTO.class);
+	    modelMapper.createTypeMap(ViewPass.class, PassDTO.class);
+	    modelMapper.createTypeMap(ViewUserInfo.class, UserInfoDTO.class);
 	    return modelMapper;	    
 	}
 	

@@ -8,10 +8,14 @@ package com.karumien.cloud.ais.service;
 
 import java.util.List;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import org.springframework.data.domain.Page;
 
-import com.karumien.cloud.ais.api.entity.ViewPassEntity;
+import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
+import com.karumien.cloud.ais.api.model.WorkMonthDTO;
 
 /**
  * Front AIS Service.
@@ -27,14 +31,22 @@ public interface AISService {
 	 * @param usercode filtered by usercode (optional)
 	 * @return {@link Page} of {@link PassDTO} filtered by optional user
 	 */
-	Page<ViewPassEntity> getPass(Integer usercode);
+	Page<ViewPass> getPass(Integer usercode);
+
+	/**
+	 * Returns passes filtered by user (optional).
+	 * 
+	 * @param username filtered by username (optional)
+	 * @return {@link Page} of {@link PassDTO} filtered by optional user
+	 */
+	Page<ViewPass> getPass(String username);
 
 	/**
 	 * Returns all users onsite.
 	 * 
 	 * @return {@link List} of {@link PassDTO} which is onsite
 	 */
-	List<ViewPassEntity> getPassOnsite();
+	List<ViewPass> getPassOnsite();
 
 	/**
 	 * Returns specified {@link PassDTO} by {@code id}.
@@ -42,6 +54,16 @@ public interface AISService {
 	 * @param passId id of pass
 	 * @return {@link PassDTO} specified by {@code id}
 	 */
-	ViewPassEntity getPassById(Integer passId);
+	ViewPass getPassById(Integer passId);
+
+	/**
+	 * Return work month for specified user
+	 * 
+	 * @param year     year of work month
+	 * @param month    year of work month
+	 * @param username username records
+	 * @return {@link WorkMonthDTO} work month of specified user
+	 */
+	WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username);
 
 }

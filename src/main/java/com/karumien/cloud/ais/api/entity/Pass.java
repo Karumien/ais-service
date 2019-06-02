@@ -6,6 +6,7 @@
  */
 package com.karumien.cloud.ais.api.entity;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 import javax.persistence.Column;
@@ -26,7 +27,9 @@ import lombok.EqualsAndHashCode;
 @Table(name = "DATPRUCHUDAL")
 @Data
 @EqualsAndHashCode(of = "id")
-public class PassEntity {
+public class Pass implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 	
 	@Id
     private Integer id;

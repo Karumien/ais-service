@@ -4,6 +4,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.validation.Valid;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,7 +26,7 @@ import com.karumien.cloud.ais.service.AISService;
  */
 @RestController
 @RequestMapping(path = "/api")
-public class AISRestController implements PassApi {
+public class AISPassRestController implements PassApi {
 
 	@Autowired
 	private ModelMapper mapper;
@@ -36,9 +38,9 @@ public class AISRestController implements PassApi {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ResponseEntity<List<PassDTO>> getPass(Integer usercode) {
+	public ResponseEntity<List<PassDTO>> getPass(@Valid String username) {
 		return new ResponseEntity<>(
-				aisService.getPass(usercode).get()
+				aisService.getPass(username).get()
 					.map(pass -> mapper.map(pass, PassDTO.class)).collect(Collectors.toList()), HttpStatus.OK);
 	}
 
@@ -79,7 +81,10 @@ public class AISRestController implements PassApi {
 		if (lines.isEmpty()) {
 			sb.append("<tr><td><p>Nenalezen žádný záznam.</p></td></tr>");
 		} else {
-			sb.append("<tr><td class=\"i24_tableHead menuline\">Čas</td><td class=\"i24_tableHead menuline\">Středisko</td><td class=\"i24_tableHead menuline\">Osoba</td><td class=\"i24_tableHead menuline\">Událost</td></tr>");
+			sb.append("<tr><td class=\"i24_tableHead menuline\">Čas</td>"
+					+ "<td class=\"i24_tableHead menuline\">Středisko</td>"
+					+ "<td class=\"i24_tableHead menuline\">Osoba</td>"
+					+ "<td class=\"i24_tableHead menuline\">Událost</td></tr>");
 			
 			for (PassDTO p : lines) {
 				
@@ -101,4 +106,5 @@ public class AISRestController implements PassApi {
 		sb.append("</table>");
 		return sb.toString();
 	}
+	
 }

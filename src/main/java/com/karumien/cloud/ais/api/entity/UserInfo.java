@@ -6,6 +6,8 @@
  */
 package com.karumien.cloud.ais.api.entity;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -18,8 +20,10 @@ import javax.persistence.Table;
  * @since 1.0, 15. 4. 2019 17:51:09
  */
 @Entity
-@Table(name = "DATZAMEST")
-public class UserInfoEntity {
+@Table(name = "VIEW_DATZAMEST")
+public class UserInfo implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	private Integer id;
@@ -29,5 +33,8 @@ public class UserInfoEntity {
 
 	@Column(name = "JMENO")
     private String name;
+	
+	@Column(name = "UZIVJMENO")
+    private String username;
 	  
 }

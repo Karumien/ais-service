@@ -6,6 +6,7 @@
  */
 package com.karumien.cloud.ais.api.entity;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 import javax.persistence.AttributeOverride;
@@ -28,7 +29,9 @@ import lombok.EqualsAndHashCode;
 @Table(name = "VIEW_DATPRUCHUDAL")
 @Data
 @EqualsAndHashCode(of = "id")
-public class ViewPassEntity {
+public class ViewPass implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 	
 	@Id
     private Integer id;
@@ -45,10 +48,20 @@ public class ViewPassEntity {
 	@Column(name = "ETIME")
 	private OffsetDateTime date;
 		
+	@Column(name = "DAY")
+	private Integer day;
+
+	@Column(name = "MONTH")
+	private Integer month;
+	
+	@Column(name = "YEAR")
+	private Integer year;
+
 	@Embedded
     @AttributeOverride(name="code",column=@Column(name="PERSON_CODE"))
     @AttributeOverride(name="name",column=@Column(name="PERSON_NAME"))
     @AttributeOverride(name="department",column=@Column(name="DEPARTMENT_CODE"))
-	private ViewUserInfoEntity person;
+    @AttributeOverride(name="username",column=@Column(name="USERNAME"))
+	private ViewUserInfo person;
 	
 }

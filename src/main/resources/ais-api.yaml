@@ -1,108 +1,292 @@
----
-swagger: "2.0"
+swagger: '2.0'
 info:
-  description: "REST API for AIS\n"
-  version: "1.0"
-  title: "Attended Information System"
-basePath: "/api"
+  description: REST API for AIS
+  version: '1.0'
+  termsOfService: 'http://www.karumien.com/terms/'
+  contact:
+    email: info@karumien.com
+  title: Attended Information System
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+basePath: /api
 schemes:
-- "http"
+  - http
 paths:
   /pass:
     get:
-      summary: "Lists all pass"
-      description: "Lists all pass of users"
-      operationId: "getPass"
+      summary: Lists all pass
+      description: Lists all pass of users
+      operationId: getPass
       produces:
-        - "application/json"
+        - application/json
       parameters:
-      - name: "usercode"
-        in: "query"
-        description: "Optional filtering by usercode"
-        required: false
-        type: "integer"
+        - name: username
+          in: query
+          description: Optional filtering by username
+          required: false
+          type: string
       responses:
-        200:
-          description: "Successful operation"
+        '200':
+          description: Successful operation
           schema:
-            type: "array"
+            type: array
             items:
-              $ref: "#/definitions/Pass"
-        400:
-          description: "Invalid status value"
-  /pass/{passId}:
+              $ref: '#/definitions/Pass'
+        '400':
+          description: Invalid status value
+  '/pass/{passId}':
     get:
-      summary: "Find pass by ID"
-      description: "Returns a single pass"
-      operationId: "getPassById"
+      summary: Find pass by ID
+      description: Returns a single pass
+      operationId: getPassById
       produces:
-      - "application/json"
+        - application/json
       parameters:
-      - name: "passId"
-        in: "path"
-        description: "ID of pass to return"
-        required: true
-        type: "integer"
+        - name: passId
+          in: path
+          description: ID of pass to return
+          required: true
+          type: integer
       responses:
-        200:
-          description: "Successful operation"
+        '200':
+          description: Successful operation
           schema:
-            $ref: "#/definitions/Pass"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pass not found"
+            $ref: '#/definitions/Pass'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Pass not found
   /pass/onsite:
     get:
-      summary: "Find users onsite"
-      description: "Returns a list on users onsite"
-      operationId: "getUsersOnsite"
+      summary: Find users onsite
+      description: Returns a list on users onsite
+      operationId: getUsersOnsite
       produces:
-      - "application/json"
+        - application/json
       responses:
-        200:
-          description: "Successful operation"
+        '200':
+          description: Successful operation
           schema:
-            type: "array"
+            type: array
             items:
-              $ref: "#/definitions/Pass"
-        400:
-          description: "Invalid status value"
+              $ref: '#/definitions/Pass'
+        '400':
+          description: Invalid status value
+  '/work/{year}/{month}':
+    get:
+      summary: Find workdays in month for specified user
+      description: Returns workdays of specified month
+      operationId: getWorkDays
+      produces:
+        - application/json
+      parameters:
+        - name: year
+          in: path
+          description: Year for month of workdays
+          required: true
+          type: integer
+        - name: month
+          in: path
+          description: Year for month of workdays
+          required: true
+          type: integer
+        - name: username
+          in: query
+          description: Filtering by username
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/WorkMonth'
+        '400':
+          description: Invalid date
+        '404':
+          description: User not found
 definitions:
+  WorkDayType:
+    type: string
+    enum: [WORKDAY, NATIONAL_HOLIDAY, COMPANY_HOLIDAY, SATURDAY, SUNDAY]
+  WorkType:
+    type: string
+    enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
   Pass:
-    type: "object"
+    type: object
     properties:
       id:
-        type: "integer"
+        type: integer
       category:
-        type: "string"
+        type: string
       categoryId:
-        type: "integer"
+        type: integer
       chip:
-        type: "string"
+        type: string
       date:
-        type: "string"
-        format: "date-time"
+        type: string
+        format: date-time
       person:
         $ref: '#/definitions/UserInfo'
     example:
       id: 221509
-      category: "7"
-      chip: "00000B207E8E"
-      date: "2017-07-21T17:32:28Z"
+      category: '7'
+      chip: '00000B207E8E'
+      date: '2017-07-21T17:32:28Z'
   UserInfo:
-    type: "object"
+    type: object
     properties:
       id:
-        type: "integer"
+        type: integer
       code:
-        type: "integer"
+        type: integer
       name:
-        type: "string"
+        type: string
       department:
-        type: "string"
+        type: string
+      username:
+        type: string        
     example:
       id: 282
       code: 166
-      name: "Petr D."
-      department: "02"
+      name: 'Petr D.'
+      department: '02'
+  Work:
+    type: object
+    properties:
+      id:
+        type: integer
+      hours:
+        type: number
+        format: double 
+      workType:
+        $ref: "#/definitions/WorkType"
+      workDayType: 
+        $ref: "#/definitions/WorkDayType"
+    example:
+      id: 20
+      hours: 4.0
+      type: WORK
+  WorkDay:
+    type: object
+    properties:
+      id:
+        type: integer
+      date:
+        type: string
+        format: date
+      workDayType: 
+        $ref: "#/definitions/WorkDayType"
+      workStart:
+        type: string
+        format: date-time
+      lunchStart:
+        type: string
+        format: date-time
+      lunchEnd:
+        type: string
+        format: date-time
+      workEnd:
+        type: string
+        format: date-time
+      workedHours:
+        type: number
+        format: double
+      works:
+        type: array
+        items:
+          $ref: "#/definitions/Work"
+    example:
+      id: 282
+      date: '2017-07-21'
+      workDayType: WORKDAY
+      workStart: '2017-07-21T06:30:00Z'
+      lunchStart: '2017-07-21T12:00:00Z'
+      lunchEnd: '2017-07-21T12:30:00Z'
+      workEnd: '2017-07-21T15:30:00Z'
+      workedHours: 7.5
+      works:
+        - id: 15
+          hours: 4.0
+          type: WORK
+        - id: 26
+          hours: 4.0
+          type: TIMEOFF                          
+  WorkMonth:
+    type: object
+    properties:
+      id:
+        type: integer
+      year:
+        type: integer
+      month:
+        type: integer
+        description: 1 Janauar - 12 December
+      workDays:
+        type: array
+        items:
+          $ref: '#/definitions/WorkDay'
+      userInfo:
+        $ref: '#/definitions/UserInfo'
+      sums:
+        type: array
+        items:
+          $ref: "#/definitions/Work"
+      sumHolidays:
+        type: integer
+      sumWorkDays:
+        type: integer
+      sumOnSiteDays:
+        type: number
+        format: double
+    example:
+      id: 282
+      year: 2017
+      month: 1     
+      workDays:
+        - id: 282
+          date: '2017-07-01'
+          workDayType: WORKDAY
+          workStart: '2017-07-21T06:30:00Z'
+          lunchStart: '2017-07-21T12:00:00Z'
+          lunchEnd: '2017-07-21T12:30:00Z'
+          workEnd: '2017-07-21T15:30:00Z'
+          workedHours: 7.5
+          works:
+            - id: 15
+              hours: 4.0
+              workType: WORK
+              workDayType: WORKDAY
+              dayType: 
+            - id: 26
+              hours: 4.0
+              workType: TIMEOFF
+              workDayType: WORKDAY
+        - id: 282
+          date: '2017-07-02'
+          type: HOLIDAY
+          workStart: '2017-07-21T06:30:00Z'
+          lunchStart: '2017-07-21T12:00:00Z'
+          lunchEnd: '2017-07-21T12:30:00Z'
+          workEnd: '2017-07-21T16:30:00Z'
+          workedHours: 8.5      
+          works:
+            - id: 19
+              hours: 8.0
+              workType: WORK
+              workDayType: HOLIDAY
+      sums:
+        - id: 55
+          hours: 4.0
+          workType: WORK
+          workDayType: WORKDAY
+        - id: 59
+          hours: 4.0
+          workType: TIMEOFF
+          workDayType: WORKDAY
+        - id: 56
+          hours: 8.0
+          workType: WORK
+          workDayType: HOLIDAY
+      sumHolidays: 2
+      sumWorkDays: 20
