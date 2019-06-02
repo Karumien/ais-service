@@ -13,6 +13,7 @@ import javax.validation.constraints.NotNull;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,6 +47,9 @@ public class AISWorkRestController implements WorkApi {
 	
 	@Autowired
 	private AISService aisService;
+	
+	@Value(value = "${jsp.redirect:false}")
+	private Boolean redirect;
 
 	/**
 	 * {@inheritDoc}
@@ -90,12 +94,13 @@ public class AISWorkRestController implements WorkApi {
 			username = role;
 		}		
 		
-		StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><form action=\"/api/work/html\" method=\"get\">");
+		StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
+				(Boolean.TRUE.equals(redirect) ? "/ais.jsp" : "/api/work/html") + "\" method=\"get\">");
 		sb.append("<tr><td colspan=\"7\"><select name=\"month\" onchange=\"this.form.submit()\">");
 		
 		List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
 				"červenec", "srpen", "září", "říjen", "listopad", "prosinec");
-		for (int i = 0; i < 12; i++) {
+		for (int i = 4; i < 12; i++) {
 			sb.append("<option value=\"").append(i+1).append("\"").append(month.equals(i+1) ? " selected" : "");
 			sb.append(">").append(months.get(i)).append("</option>");
 		}
@@ -115,7 +120,7 @@ public class AISWorkRestController implements WorkApi {
 			+ "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
 			+ "<td class=\"i24_tableHead menuline\">Odchod</td>"
 			+ "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td><td>&nbsp;</td>"
-			+ "<td class=\"i24_tableHead menuline\">Výkazy</td></tr>");
+			+ "<td class=\"i24_tableHead menuline\">Výkazy (").append(username).append(")</td></tr>");
 		
 		WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
 		for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
