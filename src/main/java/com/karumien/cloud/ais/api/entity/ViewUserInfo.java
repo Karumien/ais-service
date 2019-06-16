@@ -34,7 +34,17 @@ public class ViewUserInfo implements Serializable {
 	@Column(name = "DEPARTMENT_CODE")
 	private String department;
 
-	@Column(name = "USERNAMR")
+	@Column(name = "USERNAME")
 	private String username;
+	
+	@Column(name = "ROLE_ADMIN")
+    private Boolean roleAdmin;
+
+	@Column(name = "ROLE_HIP")
+    private Boolean roleHip;
+
+	@Column(name = "FOND")
+    private Integer fond;
+
 
 }

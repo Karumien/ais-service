@@ -13,7 +13,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;

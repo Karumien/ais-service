@@ -45,4 +45,15 @@ public class UserInfo implements Serializable {
 	@Column(name = "UZIVJMENO")
     private String username;
 	  
+	@Column(name = "ROLE_ADMIN")
+    private Boolean roleAdmin;
+
+	@Column(name = "ROLE_HIP")
+    private Boolean roleHip;
+
+	@Column(name = "FOND")
+    private Boolean fond;
+
+	@Column(name = "ID_STREDISKO")
+	private Integer department;
 }

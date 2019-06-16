@@ -43,4 +43,11 @@ public interface UserInfoRepository extends JpaSpecificationExecutor<UserInfo>, 
 	@Query(value = "from UserInfo u order by u.username")
 	List<UserInfo> findAllOrderByUsername();
 	
+	/**
+	 * Find all known users ordered by username for HIP.
+	 * 
+	 * @return {@link List} of {@link UserInfo} all known users ordered by username for HIP
+	 */
+	@Query(value = "from UserInfo u order by u.username where u.department = :department")
+	List<UserInfo> findAllOrderByUsernameForHip(@Param("department") Integer department);
 }

@@ -72,9 +72,6 @@ public class AISServiceImpl implements AISService {
 			LocalDate.of(2019, 5, 8), LocalDate.of(2019, 7, 5), LocalDate.of(2019, 10, 28), LocalDate.of(2019, 12, 24),
 			LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26));
 
-	/** Admins */
-	private static final List<String> ADMINS = Arrays.asList("plzakova", "meduna", "SysAdmin", "Administrator");
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -309,19 +306,24 @@ public class AISServiceImpl implements AISService {
 	@Transactional(readOnly = true)
 	public List<UserInfoDTO> getWorkUsers(@Valid String username) {
 
-		if (ADMINS.contains(username)) {
-			List<UserInfoDTO> users = userInfoRepository.findAllOrderByUsername().stream()
-					.map(user -> mapper.map(user, UserInfoDTO.class)).collect(Collectors.toList());
+		UserInfo currentUser = userInfoRepository.findByUsername(username)
+				.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
+
+		if (Boolean.TRUE.equals(currentUser.getRoleAdmin()) || Boolean.TRUE.equals(currentUser.getRoleHip())) {
+			List<UserInfoDTO> users = (Boolean.TRUE.equals(currentUser.getRoleAdmin()) ? 
+				userInfoRepository.findAllOrderByUsername() : userInfoRepository.findAllOrderByUsernameForHip(currentUser.getDepartment()))
+					.stream().map(user -> mapper.map(user, UserInfoDTO.class)).collect(Collectors.toList());
+					
 			users.forEach(u -> u.setSelected(u.getUsername().equals(username)));
 			return users;
 		}
 		
-		UserInfo selectedUser = userInfoRepository.findByUsername(username)
-				.orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
-
-		return Arrays.asList(mapper.map(selectedUser, UserInfoDTO.class));
+		return Arrays.asList(mapper.map(currentUser, UserInfoDTO.class));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username, @Valid String hours,
 			@Valid Long id, @Valid String workType) {
