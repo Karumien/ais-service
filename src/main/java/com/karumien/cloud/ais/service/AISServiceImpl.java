@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -338,9 +337,8 @@ public class AISServiceImpl implements AISService {
     @Transactional(readOnly = true)
     public List<UserInfoDTO> getWorkUsers(@Valid String username) {
 
-        UserInfo currentUser = userInfoRepository.findByUsername(username)
-                .orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));
-
+        UserInfo currentUser = getUser(username);
+        
         if (Boolean.TRUE.equals(currentUser.getRoleAdmin()) || Boolean.TRUE.equals(currentUser.getRoleHip())) {
             List<UserInfoDTO> users = (Boolean.TRUE.equals(currentUser.getRoleAdmin()) ? 
                 userInfoRepository.findAllOrderByUsername() : userInfoRepository.findAllOrderByUsernameForHip(currentUser.getDepartment()))
@@ -400,5 +398,15 @@ public class AISServiceImpl implements AISService {
         work.setHours2(BigDecimal.valueOf(workHours2).setScale(2, RoundingMode.FLOOR).doubleValue());
 
         return workRepository.save(work).getId();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public UserInfo getUser(@Valid String username) {
+        return userInfoRepository.findByUsername(username)
+                .orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));   
     }
 }

@@ -13,8 +13,8 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 
+import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
@@ -86,5 +86,13 @@ public interface AISService {
     @Deprecated
     Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
             @Valid String workType, @Valid String hours, @Valid String workType2, @Valid String hours2, @Valid Long id);
+
+    /**
+     * Return user by  {@code username}.
+     * 
+     * @param username username
+     * @return {@link UserInfoDTO} selected user by {@code username}
+     */
+    UserInfo getUser(@Valid String username);
 
 }

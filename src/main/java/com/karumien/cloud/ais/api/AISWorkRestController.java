@@ -112,15 +112,10 @@ public class AISWorkRestController implements WorkApi {
         
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
                             
-        UserInfoDTO selectedUser = null;
+        UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
         
         for (UserInfoDTO user : aisService.getWorkUsers(role)) {
-            String selected = "";
-            if (username.equals(user.getUsername())) {
-                selectedUser = user;
-                selected = " selected";
-            }
-            sb.append("<option value=\"").append(user.getUsername()).append("\"").append(selected);
+            sb.append("<option value=\"").append(user.getUsername()).append("\"").append(username.equals(user.getUsername()) ? " selected" : "");
             sb.append(">").append(user.getName()).append("</option>");            
         }
         sb.append("</select><input type=\"submit\" class=\"buttonSubmit\" value=\"Nastavit\"/></td></tr></form>");                
@@ -135,7 +130,7 @@ public class AISWorkRestController implements WorkApi {
             + "<td class=\"i24_tableHead menuline\">Výkazy (").append(username).append(")</td></tr>");
 
         int countWorkDays = 0;
-        double fond = selectedUser.getFond() == null ? 1d : selectedUser.getFond() / 100d;
+        double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
         WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
