@@ -25,13 +25,13 @@ import com.karumien.cloud.ais.exception.NoDataFoundException;
 @RestControllerAdvice
 public class AISExceptionHandler {
 
-	@ExceptionHandler(NoDataFoundException.class)
-	public ResponseEntity<ExceptionErrorResponse> exceptionHandler(NoDataFoundException e) {
-		ResponseStatus status = AnnotationUtils.findAnnotation(e.getClass(), ResponseStatus.class);
-		if (status != null) {
-			return new ResponseEntity<>(new ExceptionErrorResponse(e.getCode(), e.getMessage()), status.code());
-		}
-		return new ResponseEntity<>(new ExceptionErrorResponse("NO.GLOBAL", e.getMessage()), HttpStatus.NOT_FOUND);
-	}
+    @ExceptionHandler(NoDataFoundException.class)
+    public ResponseEntity<ExceptionErrorResponse> exceptionHandler(NoDataFoundException e) {
+        ResponseStatus status = AnnotationUtils.findAnnotation(e.getClass(), ResponseStatus.class);
+        if (status != null) {
+            return new ResponseEntity<>(new ExceptionErrorResponse(e.getCode(), e.getMessage()), status.code());
+        }
+        return new ResponseEntity<>(new ExceptionErrorResponse("NO.GLOBAL", e.getMessage()), HttpStatus.NOT_FOUND);
+    }
 
 }

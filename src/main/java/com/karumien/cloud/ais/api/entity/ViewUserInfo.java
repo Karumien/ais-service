@@ -23,27 +23,27 @@ import lombok.Data;
 @Data
 public class ViewUserInfo implements Serializable {
 
-	private static final long serialVersionUID = 1L;
-	
-	@Column(name = "PERSON_CODE")
-	private Integer code;
+    private static final long serialVersionUID = 1L;
+    
+    @Column(name = "PERSON_CODE")
+    private Integer code;
 
-	@Column(name = "PERSON_NAME")
+    @Column(name = "PERSON_NAME")
     private String name;
-	  	
-	@Column(name = "DEPARTMENT_CODE")
-	private String department;
+          
+    @Column(name = "DEPARTMENT_CODE")
+    private String department;
 
-	@Column(name = "USERNAME")
-	private String username;
-	
-	@Column(name = "ROLE_ADMIN")
+    @Column(name = "USERNAME")
+    private String username;
+    
+    @Column(name = "ROLE_ADMIN")
     private Boolean roleAdmin;
 
-	@Column(name = "ROLE_HIP")
+    @Column(name = "ROLE_HIP")
     private Boolean roleHip;
 
-	@Column(name = "FOND")
+    @Column(name = "FOND")
     private Integer fond;
 
 

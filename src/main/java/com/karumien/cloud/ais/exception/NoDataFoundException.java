@@ -22,27 +22,27 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false, of = "code")
 @ResponseStatus(code = HttpStatus.NOT_FOUND)
 public class NoDataFoundException extends RuntimeException {
-	
-	private static final long serialVersionUID = 1L;
+    
+    private static final long serialVersionUID = 1L;
 
-	private String code;
-	
-	public NoDataFoundException() {
-	}
+    private String code;
+    
+    public NoDataFoundException() {
+    }
 
-	public NoDataFoundException(String code, String message) {
-		super(message);
-		this.code = code;
-	}
+    public NoDataFoundException(String code, String message) {
+        super(message);
+        this.code = code;
+    }
 
-	public NoDataFoundException(String code, Throwable cause) {
-		super(cause);
-		this.code = code;
-	}
+    public NoDataFoundException(String code, Throwable cause) {
+        super(cause);
+        this.code = code;
+    }
 
-	public NoDataFoundException(String code, String message, Throwable cause) {
-		super(message, cause);
-		this.code = code;
-	}
+    public NoDataFoundException(String code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+    }
 
 }

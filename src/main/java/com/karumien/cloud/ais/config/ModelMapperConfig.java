@@ -24,12 +24,12 @@ import com.karumien.cloud.ais.api.model.UserInfoDTO;
 @Configuration
 public class ModelMapperConfig {
 
-	@Bean
-	public ModelMapper modelMapper() {
-	    ModelMapper modelMapper = new ModelMapper();
-	    modelMapper.createTypeMap(ViewPass.class, PassDTO.class);
-	    modelMapper.createTypeMap(ViewUserInfo.class, UserInfoDTO.class);
-	    return modelMapper;	    
-	}
-	
+    @Bean
+    public ModelMapper modelMapper() {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.createTypeMap(ViewPass.class, PassDTO.class);
+        modelMapper.createTypeMap(ViewUserInfo.class, UserInfoDTO.class);
+        return modelMapper;        
+    }
+    
 }

@@ -29,21 +29,21 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(of = "id")
 public class Pass implements Serializable {
 
-	private static final long serialVersionUID = 1L;
-	
-	@Id
+    private static final long serialVersionUID = 1L;
+    
+    @Id
     private Integer id;
 
-	@Column(name = "PRIZTYP")
+    @Column(name = "PRIZTYP")
     private String category;
 
-//	@Column(name = "ACTION_TYPE")
+//    @Column(name = "ACTION_TYPE")
 //    private String categoryName;
 
-	@Column(name = "TMKOD")
-	private String chip;
+    @Column(name = "TMKOD")
+    private String chip;
 
-	@Column(name = "ETIME")
-	private OffsetDateTime date;
+    @Column(name = "ETIME")
+    private OffsetDateTime date;
 
 }

@@ -21,10 +21,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ExceptionErrorResponse {
 
-	/** Internal code */
-	private String code;
+    /** Internal code */
+    private String code;
 
-	/** Message */
-	private String message;
+    /** Message */
+    private String message;
 
 }

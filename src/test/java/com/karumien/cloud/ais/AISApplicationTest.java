@@ -23,35 +23,35 @@ import com.karumien.cloud.ais.service.AISService;
 @SpringBootTest
 public class AISApplicationTest {
 
-	@Autowired
-	private AISService aisService;
-	
-	@Test
-	public void getUserWorkMonth() {
-		WorkMonthDTO workMonth = aisService.getWorkDays(2019, 5, "meduna");
-		assertNotNull(workMonth);
-		assertNotNull(workMonth.getWorkDays());
-		assertTrue("Exists works", ! workMonth.getWorkDays().isEmpty());	
-		assertEquals(31, workMonth.getWorkDays().size());
-	}
+    @Autowired
+    private AISService aisService;
+    
+    @Test
+    public void getUserWorkMonth() {
+        WorkMonthDTO workMonth = aisService.getWorkDays(2019, 5, "meduna");
+        assertNotNull(workMonth);
+        assertNotNull(workMonth.getWorkDays());
+        assertTrue("Exists works", ! workMonth.getWorkDays().isEmpty());    
+        assertEquals(31, workMonth.getWorkDays().size());
+    }
 
-	@Test
-	public void getUsers() {
-		List<UserInfoDTO> users = aisService.getWorkUsers("meduna");
-		assertNotNull(users);
-		assertTrue("Exists users", ! users.isEmpty());	
-		assertTrue("Exists more users", users.size() > 1);	
+    @Test
+    public void getUsers() {
+        List<UserInfoDTO> users = aisService.getWorkUsers("meduna");
+        assertNotNull(users);
+        assertTrue("Exists users", ! users.isEmpty());    
+        assertTrue("Exists more users", users.size() > 1);    
 
-		users = aisService.getWorkUsers("karkos");
-		assertNotNull(users);
-		assertTrue("Exists users", ! users.isEmpty());	
-		assertTrue("Exists one", users.size() == 1);	
-	}
+        users = aisService.getWorkUsers("karkos");
+        assertNotNull(users);
+        assertTrue("Exists users", ! users.isEmpty());    
+        assertTrue("Exists one", users.size() == 1);    
+    }
 
-	@Test(expected = NoDataFoundException.class)
-	public void getUserNoExisted() {
-		List<UserInfoDTO> users = aisService.getWorkUsers("nekdo");
-		assertNull(users);
-	}
-	
+    @Test(expected = NoDataFoundException.class)
+    public void getUserNoExisted() {
+        List<UserInfoDTO> users = aisService.getWorkUsers("nekdo");
+        assertNull(users);
+    }
+    
 }

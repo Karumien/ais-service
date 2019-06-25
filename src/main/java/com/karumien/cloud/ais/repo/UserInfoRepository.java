@@ -25,29 +25,29 @@ import com.karumien.cloud.ais.api.entity.UserInfo;
  */
 @Repository
 public interface UserInfoRepository extends JpaSpecificationExecutor<UserInfo>, JpaRepository<UserInfo, Long> {
-	
-	/**
-	 * Find known user by username.
-	 * 
-	 * @param username specific user
-	 * @return {@link List} of {@link UserInfo} know user by username
-	 */
-	@Query(value = "from UserInfo u where u.username = :username")
-	Optional<UserInfo> findByUsername(@Param("username") String username);
+    
+    /**
+     * Find known user by username.
+     * 
+     * @param username specific user
+     * @return {@link List} of {@link UserInfo} know user by username
+     */
+    @Query(value = "from UserInfo u where u.username = :username")
+    Optional<UserInfo> findByUsername(@Param("username") String username);
 
-	/**
-	 * Find all known users ordered by username.
-	 * 
-	 * @return {@link List} of {@link UserInfo} all known users ordered by username
-	 */
-	@Query(value = "from UserInfo u order by u.username")
-	List<UserInfo> findAllOrderByUsername();
-	
-	/**
-	 * Find all known users ordered by username for HIP.
-	 * 
-	 * @return {@link List} of {@link UserInfo} all known users ordered by username for HIP
-	 */
-	@Query(value = "from UserInfo u order by u.username where u.department = :department")
-	List<UserInfo> findAllOrderByUsernameForHip(@Param("department") Integer department);
+    /**
+     * Find all known users ordered by username.
+     * 
+     * @return {@link List} of {@link UserInfo} all known users ordered by username
+     */
+    @Query(value = "from UserInfo u order by u.username")
+    List<UserInfo> findAllOrderByUsername();
+    
+    /**
+     * Find all known users ordered by username for HIP.
+     * 
+     * @return {@link List} of {@link UserInfo} all known users ordered by username for HIP
+     */
+    @Query(value = "from UserInfo u where u.department = :department order by u.username")
+    List<UserInfo> findAllOrderByUsernameForHip(@Param("department") Integer department);
 }

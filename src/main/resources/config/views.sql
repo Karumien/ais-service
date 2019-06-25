@@ -4,6 +4,7 @@ drop view VIEW_DATPRUCHUDAL_TODAY;
 drop view VIEW_DATPRUCHUDAL;
 drop view VIEW_DATZAMEST;
 drop table AIS_USERNAME;
+drop table AIS_WORK;
 
 create table AIS_USERNAME (
    OSCISLO int,
@@ -29,6 +30,8 @@ create table AIS_WORK (
    USERNAME varchar(255) NOT NULL,
    HOURS double,
    WORK_TYPE varchar(50) NOT NULL,
+   HOURS2 double,
+   WORK_TYPE2 varchar(50) NOT NULL,
    WORK_DAY_TYPE varchar(50) NOT NULL,
    PRIMARY KEY (ID)
 );

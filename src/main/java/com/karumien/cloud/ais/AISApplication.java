@@ -24,13 +24,13 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 @ComponentScan(basePackages = { "com.karumien"})
 public class AISApplication {
-	
-	/**
-	 * Run app with DB password -Dspring-boot.run.arguments=--spring.datasource.password=xxxx<br/>
-	 * ln -s /tmp/ais-1.0.0-SNAPSHOT.jar /etc/init.d/aditus-reader
-	 * 
-	 * @param args arguments for start
-	 */
+    
+    /**
+     * Run app with DB password -Dspring-boot.run.arguments=--spring.datasource.password=xxxx<br/>
+     * ln -s /tmp/ais-1.0.0-SNAPSHOT.jar /etc/init.d/aditus-reader
+     * 
+     * @param args arguments for start
+     */
     public static void main(String[] args) {
         SpringApplication.run(AISApplication.class, args);
     }

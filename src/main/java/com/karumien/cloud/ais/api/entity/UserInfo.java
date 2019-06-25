@@ -31,29 +31,29 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(of = "username")
 public class UserInfo implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@Id
-	private Long id;
+    @Id
+    private Long id;
  
-	@Column(name = "OSCISLO")
-	private Integer code;
+    @Column(name = "OSCISLO")
+    private Integer code;
 
-	@Column(name = "JMENO")
+    @Column(name = "JMENO")
     private String name;
-	
-	@Column(name = "UZIVJMENO")
+    
+    @Column(name = "UZIVJMENO")
     private String username;
-	  
-	@Column(name = "ROLE_ADMIN")
+      
+    @Column(name = "ROLE_ADMIN")
     private Boolean roleAdmin;
 
-	@Column(name = "ROLE_HIP")
+    @Column(name = "ROLE_HIP")
     private Boolean roleHip;
 
-	@Column(name = "FOND")
-    private Boolean fond;
+    @Column(name = "FOND")
+    private Integer fond;
 
-	@Column(name = "ID_STREDISKO")
-	private Integer department;
+    @Column(name = "ID_STREDISKO")
+    private Integer department;
 }

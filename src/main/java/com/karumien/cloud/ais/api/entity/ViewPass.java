@@ -34,37 +34,37 @@ import lombok.EqualsAndHashCode;
 @Immutable
 public class ViewPass implements Serializable {
 
-	private static final long serialVersionUID = 1L;
-	
-	@Id
+    private static final long serialVersionUID = 1L;
+    
+    @Id
     private Long id;
 
-	@Column(name = "ACTION_TYPE")
+    @Column(name = "ACTION_TYPE")
     private Integer categoryId;
 
-	@Column(name = "ACTION_NAME")
-	private String category;
+    @Column(name = "ACTION_NAME")
+    private String category;
 
-	@Column(name = "CHIP_CODE")
-	private String chip;
+    @Column(name = "CHIP_CODE")
+    private String chip;
 
-	@Column(name = "ETIME")
-	private OffsetDateTime date;
-		
-	@Column(name = "DAY")
-	private Integer day;
+    @Column(name = "ETIME")
+    private OffsetDateTime date;
+        
+    @Column(name = "DAY")
+    private Integer day;
 
-	@Column(name = "MONTH")
-	private Integer month;
-	
-	@Column(name = "YEAR")
-	private Integer year;
+    @Column(name = "MONTH")
+    private Integer month;
+    
+    @Column(name = "YEAR")
+    private Integer year;
 
-	@Embedded
+    @Embedded
     @AttributeOverride(name="code",column=@Column(name="PERSON_CODE"))
     @AttributeOverride(name="name",column=@Column(name="PERSON_NAME"))
     @AttributeOverride(name="department",column=@Column(name="DEPARTMENT_CODE"))
     @AttributeOverride(name="username",column=@Column(name="USERNAME"))
-	private ViewUserInfo person;
-	
+    private ViewUserInfo person;
+    
 }

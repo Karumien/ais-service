@@ -26,16 +26,16 @@ import com.karumien.cloud.ais.api.entity.Work;
 @Repository
 public interface WorkRepository extends JpaSpecificationExecutor<Work>, JpaRepository<Work, Long> {
 
-	/**
-	 * Find saved works by user in specified month.
-	 * 
-	 * @param username specific user
-	 * @param dateFrom date from
-	 * @param dateTo   date to
-	 * @return {@link List} of {@link Work} saved works by user in specified month
-	 */
-	@Query(value = "from Work w where w.username = :username and w.date >= :dateFrom and w.date <= :dateTo")
-	List<Work> findByUsernameAndDateRange(@Param("username") String username, @Param("dateFrom") LocalDate dateFrom,
-			@Param("dateTo") LocalDate dateTo);
+    /**
+     * Find saved works by user in specified month.
+     * 
+     * @param username specific user
+     * @param dateFrom date from
+     * @param dateTo   date to
+     * @return {@link List} of {@link Work} saved works by user in specified month
+     */
+    @Query(value = "from Work w where w.username = :username and w.date >= :dateFrom and w.date <= :dateTo")
+    List<Work> findByUsernameAndDateRange(@Param("username") String username, @Param("dateFrom") LocalDate dateFrom,
+            @Param("dateTo") LocalDate dateTo);
 
 }

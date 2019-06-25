@@ -13,6 +13,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
@@ -26,54 +27,64 @@ import com.karumien.cloud.ais.api.model.WorkMonthDTO;
  * @since 1.0, 15. 4. 2019 17:09:02
  */
 public interface AISService {
-	
-	/** Hours in work day 7.5 vs 8.0 */
-	double HOURS_IN_DAY = 8d;
+    
+    /** Hours in work day 7.5 vs 8.0 */
+    double HOURS_IN_DAY = 8d;
 
-	/**
-	 * Returns passes filtered by user (optional).
-	 * 
-	 * @param usercode filtered by usercode (optional)
-	 * @return {@link Page} of {@link PassDTO} filtered by optional user
-	 */
-	Page<ViewPass> getPass(Integer usercode);
+    /**
+     * Returns passes filtered by user (optional).
+     * 
+     * @param usercode filtered by usercode (optional)
+     * @return {@link Page} of {@link PassDTO} filtered by optional user
+     */
+    Page<ViewPass> getPass(Integer usercode);
 
-	/**
-	 * Returns passes filtered by user (optional).
-	 * 
-	 * @param username filtered by username (optional)
-	 * @return {@link Page} of {@link PassDTO} filtered by optional user
-	 */
-	Page<ViewPass> getPass(String username);
+    /**
+     * Returns passes filtered by user (optional).
+     * 
+     * @param username filtered by username (optional)
+     * @return {@link Page} of {@link PassDTO} filtered by optional user
+     */
+    Page<ViewPass> getPass(String username);
 
-	/**
-	 * Returns all users onsite.
-	 * 
-	 * @return {@link List} of {@link PassDTO} which is onsite
-	 */
-	List<ViewPass> getPassOnsite();
+    /**
+     * Returns all users onsite.
+     * 
+     * @return {@link List} of {@link PassDTO} which is onsite
+     */
+    List<ViewPass> getPassOnsite();
 
-	/**
-	 * Return work month for specified user
-	 * 
-	 * @param year     year of work month
-	 * @param month    year of work month
-	 * @param username username records
-	 * @return {@link WorkMonthDTO} work month of specified user
-	 */
-	WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username);
+    /**
+     * Return work month for specified user
+     * 
+     * @param year     year of work month
+     * @param month    year of work month
+     * @param username username records
+     * @return {@link WorkMonthDTO} work month of specified user
+     */
+    WorkMonthDTO getWorkDays(Integer year, Integer month, @NotNull @Valid String username);
 
-	/**
-	 * Return known users list,
-	 * 
-	 * @param username
-	 * @return {@link List} of {@link UserInfoDTO} known users
-	 */
-	List<UserInfoDTO> getWorkUsers(@Valid String username);
+    /**
+     * Return known users list,
+     * 
+     * @param username
+     * @return {@link List} of {@link UserInfoDTO} known users
+     */
+    List<UserInfoDTO> getWorkUsers(@Valid String username);
 
-	
-	@Deprecated
-	Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
-			@Valid String hours, @Valid Long id, @Valid String workType);
+    /**
+     * 
+     * @param date
+     * @param username
+     * @param workType
+     * @param hours
+     * @param workType2
+     * @param hours2
+     * @param id
+     * @return
+     */
+    @Deprecated
+    Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
+            @Valid String workType, @Valid String hours, @Valid String workType2, @Valid String hours2, @Valid Long id);
 
 }

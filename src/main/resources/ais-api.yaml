@@ -64,7 +64,23 @@ paths:
           required: true
           type: string
           format: date
+        - name: workType
+          in: query
+          description: Year for month of workdays
+          required: false
+          type: string
+          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
         - name: hours
+          in: query
+          required: false
+          type: string
+        - name: workType2
+          in: query
+          description: Year for month of workdays
+          required: false
+          type: string
+          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
+        - name: hours2
           in: query
           required: false
           type: string
@@ -79,12 +95,6 @@ paths:
           description: Filtering by username
           required: true
           type: string
-        - name: workType
-          in: query
-          description: Year for month of workdays
-          required: false
-          type: string
-          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
       responses:
         '200':
           description: Successful operation
@@ -154,7 +164,7 @@ definitions:
     enum: [WORKDAY, NATIONAL_HOLIDAY, COMPANY_HOLIDAY, SATURDAY, SUNDAY]
   WorkType:
     type: string
-    enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
+    enum: [NONE, WORK, TRIP, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
   Pass:
     type: object
     properties:
@@ -188,7 +198,15 @@ definitions:
       department:
         type: string
       username:
-        type: string        
+        type: string      
+      fond:
+        type: integer  
+      roleAdmin:
+        type: boolean
+        default: false
+      roleHip:  
+        type: boolean
+        default: false
       selected:
         type: boolean
         default: false
@@ -206,6 +224,11 @@ definitions:
         type: number
         format: double 
       workType:
+        $ref: "#/definitions/WorkType"
+      hours2:
+        type: number
+        format: double 
+      workType2:
         $ref: "#/definitions/WorkType"
       workDayType: 
         $ref: "#/definitions/WorkDayType"
