@@ -135,7 +135,6 @@ public class AISWorkRestController implements WorkApi {
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
             sb.append("<tr>");
-            sb.append("<tr><td colspan=\"8\"><br></td></tr>");
             sb.append("<td class=\"i24_tableItem\"><i>").append(workDay.getDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).append("</i></td>");
             sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
