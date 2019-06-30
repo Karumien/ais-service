@@ -24,6 +24,7 @@ import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
+import com.karumien.cloud.ais.api.model.WorkDTO;
 import com.karumien.cloud.ais.api.model.WorkDayTypeDTO;
 import com.karumien.cloud.ais.api.model.WorkHourDTO;
 import com.karumien.cloud.ais.api.model.WorkMonthDTO;
@@ -39,56 +40,56 @@ public interface AISService {
 
     /** Hours in work day 7.5 vs 8.0 */
     double HOURS_IN_DAY = 8d;
-    
+
     default String hours(Double workedHours) {
         if (workedHours == null) {
             return "";
         }
-        NumberFormat formatter = new DecimalFormat("#0.00");     
+        NumberFormat formatter = new DecimalFormat("#0.00");
         return formatter.format(workedHours);
     }
-    
+
     default String date(LocalDate date) {
         if (date == null) {
             return "";
         }
-        
+
         return date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
-    
+
     default String days(Number workedHours) {
         if (workedHours == null) {
             return "";
         }
-        NumberFormat formatter = new DecimalFormat("#0.00");     
-        return formatter.format(workedHours.doubleValue()*AISService.HOURS_IN_DAY);
+        NumberFormat formatter = new DecimalFormat("#0.00");
+        return formatter.format(workedHours.doubleValue() * AISService.HOURS_IN_DAY);
     }
 
     default String hoursOnly(@Valid WorkHourDTO work) {
         if (work == null || work.getDate() == null) {
             return "";
         }
-        
+
         return work.getDate().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     default String getDescription(@Valid WorkDayTypeDTO workDayType) {
         switch (workDayType) {
         case NATIONAL_HOLIDAY:
-            return "Státní svátek";            
+            return "Státní svátek";
         case WORKDAY:
             return "Pracovní den";
         default:
             return "";
         }
     }
-    
+
     default String getDescription(@Valid WorkTypeDTO workType) {
         switch (workType) {
         case WORK:
-            return "Odpracováno";            
+            return "Odpracováno";
         case TRIP:
-            return "Služební cesta";            
+            return "Služební cesta";
         case HOLIDAY:
             return "Dovolená";
         case HOMEOFFICE:
@@ -151,21 +152,6 @@ public interface AISService {
     List<UserInfoDTO> getWorkUsers(@Valid String username);
 
     /**
-     * 
-     * @param date
-     * @param username
-     * @param workType
-     * @param hours
-     * @param workType2
-     * @param hours2
-     * @param id
-     * @return
-     */
-    @Deprecated
-    Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username, @Valid String workType, @Valid String hours, @Valid String workType2,
-            @Valid String hours2, @Valid Long id);
-
-    /**
      * Return user by {@code username}.
      * 
      * @param username
@@ -186,8 +172,19 @@ public interface AISService {
      * @param out
      *            {@link OutputStream} for data write
      * @return {@link Workbook} excel export
-     * @throws IOException on I/O error
+     * @throws IOException
+     *             on I/O error
      */
     Workbook exportWorkDays(Integer year, Integer month, @NotNull @Valid String username, OutputStream out) throws IOException;
+
+    /**
+     * Update work of selected user.
+     * 
+     * @param work
+     *            work of user
+     * @param username
+     *            selected username
+     */
+    void setWork(@Valid WorkDTO work, @NotNull @Valid String username);
 
 }

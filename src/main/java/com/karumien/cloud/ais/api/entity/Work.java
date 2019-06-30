@@ -28,10 +28,10 @@ public class Work implements Serializable {
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "DATE", nullable = false)
+    @Column(name = "DATE", nullable = false, insertable = true, updatable = false)
     private LocalDate date;
 
-    @Column(name = "USERNAME", nullable = false)
+    @Column(name = "USERNAME", nullable = false, insertable = true, updatable = false)
     private String username;
 
     @Column(name = "HOURS")
@@ -48,7 +48,7 @@ public class Work implements Serializable {
     @Enumerated(EnumType.STRING)
     private WorkTypeDTO workType2 = WorkTypeDTO.NONE;
 
-    @Column(name = "WORK_DAY_TYPE", nullable = false)
+    @Column(name = "WORK_DAY_TYPE", nullable = false, insertable = true, updatable = false)
     @Enumerated(EnumType.STRING)
     private WorkDayTypeDTO workDayType;
 

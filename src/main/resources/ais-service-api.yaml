@@ -53,43 +53,18 @@ paths:
           description: Invalid status value
   '/work/update':
     post:
-      summary: Find workdays in month for specified user
+      summary: Update work in workdays for specified user
       operationId: setWork
-      produces:
+      consumes:
         - application/json
       parameters:
-        - name: date
-          in: query
-          description: Year for month of workdays
+        - in: body
+          name: work
+          description: The user's work to change
           required: true
-          type: string
-          format: date
-        - name: workType
-          in: query
-          description: Year for month of workdays
-          required: false
-          type: string
-          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
-        - name: hours
-          in: query
-          required: false
-          type: string
-        - name: workType2
-          in: query
-          description: Year for month of workdays
-          required: false
-          type: string
-          enum: [NONE, WORK, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
-        - name: hours2
-          in: query
-          required: false
-          type: string
-        - name: id
-          in: query
-          description: Year for month of workdays
-          required: false
-          type: integer
-          format: int64
+          schema:
+            type: object
+            $ref: "#/definitions/Work"
         - name: username
           in: query
           description: Filtering by username
@@ -98,9 +73,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          schema:
-            type: integer
-            format: int64
         '400':
           description: Invalid date
         '404':
@@ -220,6 +192,7 @@ definitions:
     properties:
       id:
         type: integer
+        format: int64
       hours:
         type: number
         format: double 

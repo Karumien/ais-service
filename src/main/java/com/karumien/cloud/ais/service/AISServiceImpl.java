@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -55,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import com.google.common.base.Objects;
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.entity.Work;
@@ -387,51 +389,24 @@ public class AISServiceImpl implements AISService {
      * {@inheritDoc}
      */
     @Override
-    public Long setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username, @Valid String workType,
-            @Valid String hours, @Valid String workType2, @Valid String hours2, @Valid Long id) {
-
-        Work work = null;
+    @Transactional
+    public void setWork(@Valid WorkDTO work, @NotNull @Valid String username) {
         
-        Double workHours = null;
-        try {
-            workHours = (hours == null || hours.trim().length() == 0) ? null : Double.valueOf(hours.replace(',', '.').trim());
-        } catch (Exception e) {
+        Optional<Work> workSaved = workRepository.findById(work.getId());
+        if (!workSaved.isPresent()) {
+            return;
         }
 
-        Double workHours2 = null;
-        try {
-            workHours2 = (hours2 == null || hours2.trim().length() == 0) ? null : Double.valueOf(hours2.replace(',', '.').trim());
-        } catch (Exception e) {
+        Work workUpdated = workSaved.get();
+        if (!Objects.equal(workUpdated.getUsername(), username)) {
+            return;
         }
 
-//        if (id != null && (workHours == null || workType == null) && ) {
-//            workRepository.deleteById(id);
-//            return null;
-//        }
-        
-//        if (workHours == null || workType == null) {
-//            return null;
-//        }
-            
-        if (id != null) {
-            work = workRepository.findById(id).orElse(null);
-        } 
-        
-        if (work == null) {
-            work = new Work();
-            work.setDate(date);
-            work.setUsername(username);
-            work.setWorkDayType(getWorkDayType(date));
-        }
+        mapper.map(work, workUpdated);
+        workRepository.save(workUpdated);
 
-        work.setWorkType(WorkTypeDTO.fromValue(workType));
-        work.setHours(BigDecimal.valueOf(workHours).setScale(2, RoundingMode.FLOOR).doubleValue());
-        work.setWorkType2(WorkTypeDTO.fromValue(workType2));
-        work.setHours2(BigDecimal.valueOf(workHours2).setScale(2, RoundingMode.FLOOR).doubleValue());
-
-        return workRepository.save(work).getId();
     }
-
+    
     /**
      * {@inheritDoc}
      */

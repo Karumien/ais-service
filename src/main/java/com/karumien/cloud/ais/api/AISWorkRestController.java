@@ -143,7 +143,25 @@ public class AISWorkRestController implements WorkApi {
         LocalDate actualMonthDay = LocalDate.now();
         boolean currentMonth = (actualMonthDay.getYear() == year && actualMonthDay.getMonthValue() == month);
 
-        StringBuilder sb = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
+        StringBuilder sb = new StringBuilder("<script>"
+        + "function updateWork(form, username) {"
+        + "  var xhttp = new XMLHttpRequest();"
+        + "  xhttp.open(\"POST\", \""+ (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") + "/api/work/update?username=" 
+        + "\"+username, true);"
+        + "  xhttp.setRequestHeader(\"Content-type\", \"application/json\");"
+        + "  if (form.hours.value && form.workType.value != 'NONE' && form.hours2.value && form.workType2.value != 'NONE'"
+        + "  ||  !form.hours.value && form.workType.value == 'NONE' && form.hours2.value && form.workType2.value != 'NONE'"
+        + "  ||  form.hours.value && form.workType.value != 'NONE' && !form.hours2.value && form.workType2.value == 'NONE'"
+        + "  ||  !form.hours.value && form.workType.value == 'NONE' && !form.hours2.value && form.workType2.value == 'NONE'"
+        + ") {"
+        + "  xhttp.send('{ \"id\": ' + form.id.value + '," 
+        + "        \"hours\": ' + (!form.hours.value ? null : form.hours.value.replace(',','.')) + ',"
+        + "        \"hours2\": ' + (!form.hours2.value ? null : form.hours2.value.replace(',','.')) + ',"
+        + "        \"workType\": \"' + form.workType.value + '\","
+        + "        \"workType2\": \"' + form.workType2.value + '\" }');"
+        + "  }} </script>\n\n");
+        
+        sb.append("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
                 (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
         sb.append("<tr><td colspan=\"7\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
         
@@ -187,7 +205,14 @@ public class AISWorkRestController implements WorkApi {
         WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
+            WorkDTO work = workDay.getWork();
+
             sb.append("<tr>");
+            
+            if (work != null) {
+                sb.append("<form name=\"form"+ work.getId() +"\">");
+            }
+            
             sb.append("<td class=\"i24_tableItem\"><i>").append(aisService.date(workDay.getDate())).append("</i></td>");
             sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
@@ -207,21 +232,20 @@ public class AISWorkRestController implements WorkApi {
                 if (workDay.getWork() == null) {
                     continue;
                 }
-                
-                WorkDTO work = workDay.getWork();
-                
-                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                                
+                sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"id\" value=\""+ work.getId() +"\">"
+                        + "<input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" type=\"text\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours()) : "")
-                    .append("\"><select class=\"unvisiblelines\">");
+                    .append("\"><select class=\"unvisiblelines\" name=\"workType\" onChange=\"updateWork(this.form, '"+username+"')\">");
                 for (WorkTypeDTO type: WorkTypeDTO.values()) {
                     sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType() == type ? " selected" : "");
                     sb.append(">").append(aisService.getDescription(type)).append("</option>");
                 }
                 sb.append("</select></td>");
 
-                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" name=\"hours2\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours2()) : "")
-                    .append("\"><select class=\"unvisiblelines\">");
+                    .append("\"><select class=\"unvisiblelines\" name=\"workType2\" onChange=\"updateWork(this.form, '"+username+"')\">");
                 for (WorkTypeDTO type: WorkTypeDTO.values()) {
                     sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType2() == type ? " selected" : "");
                     sb.append(">").append(aisService.getDescription(type)).append("</option>");
@@ -230,6 +254,10 @@ public class AISWorkRestController implements WorkApi {
 
             }
                         
+            if (work != null) {
+                sb.append("</form>");
+            }
+
             sb.append("</tr>");
             
             if (workDay.getDate().getDayOfWeek() == DayOfWeek.SUNDAY && ! workDay.getDate().isEqual(workDay.getDate().with(TemporalAdjusters.lastDayOfMonth()))) {
@@ -286,11 +314,14 @@ public class AISWorkRestController implements WorkApi {
             return "";
         }
     }
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ResponseEntity<Long> setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
-            @Valid String workType, @Valid String hours, @Valid String workType2, @Valid String hours2,
-            @Valid Long id) {
-        return new ResponseEntity<>(aisService.setWork(date, username, workType, hours, workType2, hours2, id), HttpStatus.OK);
+    public ResponseEntity<Void> setWork(@Valid WorkDTO work, @NotNull @Valid String username) {
+        aisService.setWork(work, username);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
     
 }
