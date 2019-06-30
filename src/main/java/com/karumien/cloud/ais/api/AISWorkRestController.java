@@ -1,11 +1,8 @@
 package com.karumien.cloud.ais.api;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
@@ -19,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -91,7 +86,7 @@ public class AISWorkRestController implements WorkApi {
      * @throws IOException
      *             on IO error
      */
-    @RequestMapping(value = "/work/export", produces = { APPLICATION_EXCEL_VALUE }, method = RequestMethod.GET)
+    @RequestMapping(value = "/work/export", produces = { APPLICATION_EXCEL_VALUE }, method = RequestMethod.POST)
     public void exportWorkDays(@NotNull @Valid @RequestParam(value = "role", required = true) String role,
             @Valid @RequestParam(value = "username", required = false) String username,
             @Valid @RequestParam(value = "month", required = false) Integer month, 
@@ -143,7 +138,7 @@ public class AISWorkRestController implements WorkApi {
         LocalDate actualMonthDay = LocalDate.now();
         boolean currentMonth = (actualMonthDay.getYear() == year && actualMonthDay.getMonthValue() == month);
 
-        StringBuilder sb = new StringBuilder("<script>"
+        StringBuilder sb = new StringBuilder("<script type=\"text/javascript\">"
         + "function updateWork(form, username) {"
         + "  var xhttp = new XMLHttpRequest();"
         + "  xhttp.open(\"POST\", \""+ (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") + "/api/work/update?username=" 
@@ -159,8 +154,8 @@ public class AISWorkRestController implements WorkApi {
         + "        \"hours2\": ' + (!form.hours2.value ? null : form.hours2.value.replace(',','.')) + ',"
         + "        \"workType\": \"' + form.workType.value + '\","
         + "        \"workType2\": \"' + form.workType2.value + '\" }');"
-        + "  }} </script>\n\n");
-        
+        + "  }}</script>");
+
         sb.append("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
                 (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
         sb.append("<tr><td colspan=\"7\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
@@ -176,11 +171,6 @@ public class AISWorkRestController implements WorkApi {
         UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
         UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
 
-        if (roleUser.isRoleAdmin()) {
-            sb.append("<a href=\""+ (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222" ) 
-                    + "/api/work/export?username="+username+"&role="+role+"&year="+year+"&month="+month +"\">");
-            sb.append("<img src=\"/img/printer.gif\" width=\"15\" height=\"16\" border=\"0\"></a>");
-        }
         sb.append("</td>");
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
                             
@@ -191,14 +181,22 @@ public class AISWorkRestController implements WorkApi {
         
         sb.append("</select></td></tr></form>");                
         
-        sb.append("<tr>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Datum</td>"
+        sb.append("<form id=\"exportForm\" action=\"" + (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") + "/api/work/export?username=" 
+                +username+"&role="+role+"&year="+year+"&month="+month + "\" method=\"post\">");
+        sb.append("<tr>");
+        sb.append("<td class=\"i24_tableHead menuline\" align=\"right\">Datum</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Kategorie</td>"
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td><td>&nbsp;</td>"
-            + "<td class=\"i24_tableHead menuline\">Výkazy (").append(username).append(")</td></tr>");
+            + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
+
+        if (roleUser.isRoleAdmin()) {
+            sb.append("<a href=\"#\" onclick=\"document.getElementById('exportForm').submit();\">");
+            sb.append("<img onclick=\"this.form.submit();\" src=\"/img/printer.gif\" style=\"position: relative; top: 4px; margin-left: 6px; width: 15px; height: 16px;\" border=\"0\"/></a>");
+        }
+        sb.append("</td></tr></form>");
 
         int countWorkDays = 0;
         double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
@@ -301,9 +299,13 @@ public class AISWorkRestController implements WorkApi {
     }
     
     private String hoursOnly(@Valid WorkHourDTO work) {
-        return "<span style=\"color:" + aisService.hoursOnly(work) + "</span>";
+        if (work == null || work.getDate() == null) {
+            return "";
+        }
+        return "<span style=\"color:" + (work.isCorrected() ? "#888888":"#000") +"\">" 
+           + aisService.hoursOnly(work) + "</span>";
     }
-
+    
     private String getDescription(@Valid WorkDayTypeDTO workDayType) {
         switch (workDayType) {
         case NATIONAL_HOLIDAY:
