@@ -338,6 +338,17 @@ public class AISServiceImpl implements AISService {
                     }
                     sum.setHours(sum.getHours().doubleValue() + w.getHours().doubleValue());
                 });
+        works.stream().filter(w -> w.getWorkType2() != null && w.getWorkType2() != WorkTypeDTO.NONE
+                && w.getHours2() != null && w.getHours2() > 0).forEach(w -> {
+                    WorkDTO sum = sums.get(w.getWorkType2());
+                    if (sum == null) {
+                        sum = new WorkDTO();
+                        sum.setWorkType(w.getWorkType2());
+                        sum.setHours(0d);
+                        sums.put(w.getWorkType2(), sum);
+                    }
+                    sum.setHours(sum.getHours().doubleValue() + w.getHours2().doubleValue());
+                });
 
         workMonth.setSums(new ArrayList<>(sums.values()));
         workMonth.setSumHolidays(sumHolidays);
@@ -468,7 +479,7 @@ public class AISServiceImpl implements AISService {
 
             createSimpleRow(sheet, row++, styles.get(ExcelStyleType.VALUE), styles.get(ExcelStyleType.VALUE_PRICE),    
                     "", "", "", "", "", "", 
-                    "", "");
+                    work != null ? work.getHours2() : "", work != null ? getDescription(work.getWorkType2()) : "");
         }        
 
         row++;
