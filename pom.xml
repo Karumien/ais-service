@@ -11,19 +11,19 @@
     </parent>
     
     <groupId>com.karumien.cloud</groupId>
-    <artifactId>ais</artifactId>
+    <artifactId>ais-service</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>i24: AIS</name>
-    <description>Attended Information System</description>
+    <name>i24: AIS Service</name>
+    <description>Attended Information System - AIS Core Service</description>
 
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
-        <swagger.input>src/main/resources/ais-api.yaml</swagger.input>
+        <swagger.input>src/main/resources/ais-service-api.yaml</swagger.input>
         <swagger.package>com.karumien.cloud.ais.api</swagger.package>
         
         <docker.repository.url>cloud.docker.com/repository/docker/karumien</docker.repository.url>
