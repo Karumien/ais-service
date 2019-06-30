@@ -6,16 +6,20 @@
  */
 package com.karumien.cloud.ais.service;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +28,32 @@ import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import org.apache.poi.hssf.usermodel.HeaderFooter;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Footer;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.PrintSetup;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
@@ -54,6 +78,12 @@ import com.karumien.cloud.ais.repo.WorkRepository;
  */
 @Service
 public class AISServiceImpl implements AISService {
+
+    private static final XSSFColor COLOR_AQUA = new XSSFColor(new java.awt.Color(70, 150, 150));
+    private static final XSSFColor COLOR_SILVER = new XSSFColor(new java.awt.Color(222, 222, 222));
+    private static final XSSFColor COLOR_SHADOW = new XSSFColor(new java.awt.Color(78, 78, 78));
+    private static final XSSFColor COLOR_WHITE = new XSSFColor(new java.awt.Color(255, 255, 255));
+    private static final int PX = 37;
 
     @Autowired
     private ViewPassRepository passRepository;
@@ -409,4 +439,330 @@ public class AISServiceImpl implements AISService {
         return userInfoRepository.findByUsername(username)
                 .orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));   
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Workbook exportWorkDays(Integer year, Integer month, @NotNull @Valid String username, OutputStream out) throws IOException {
+        
+        UserInfoDTO selectedUser = mapper.map(getUser(username), UserInfoDTO.class);
+
+        double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
+        
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        Map<ExcelStyleType, CellStyle> styles = prepareStyles(workbook, true);
+
+        String yearmonth = year + "." + (month < 10 ? "0":"") + month;
+        
+        Sheet sheet = workbook.createSheet(yearmonth + " " + username);
+
+        int row = 0;
+        int k = 0;
+
+        sheet.setColumnWidth(k++, 120 * PX);
+        sheet.setColumnWidth(k++, 150 * PX);
+        sheet.setColumnWidth(k++, 70 * PX);
+        sheet.setColumnWidth(k++, 100 * PX);
+        sheet.setColumnWidth(k++, 70 * PX);
+        sheet.setColumnWidth(k++, 70 * PX);
+        sheet.setColumnWidth(k++, 70 * PX);
+        sheet.setColumnWidth(k++, 100 * PX);
+
+        createSimpleRow(sheet, row++, styles.get(ExcelStyleType.H1), 
+                yearmonth, selectedUser.getName(),
+                null, null, null, null, null, "ev.č. " + selectedUser.getCode());               
+        
+        row++;
+        createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TH), 
+                "datum", "kategorie", "příchod", "oběd od-do", "odchod", "celkem", "výkazy", "");
+
+        WorkMonthDTO workMonthDTO = getWorkDays(year, month, username);
+        for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
+
+            WorkDTO work = null;
+
+            if (!CollectionUtils.isEmpty(workDay.getWorks())) {
+                work = workDay.getWorks().get(0);
+            }
+            
+            createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TD), styles.get(ExcelStyleType.TD_PRICE),    
+                    date(workDay.getDate()), getDescription(workDay.getWorkDayType()), hoursOnly(workDay.getWorkStart()), 
+                    hoursOnly(workDay.getLunchStart()) + (workDay.getLunchStart() != null ? " - " : "") +  hoursOnly(workDay.getLunchEnd()), 
+                    hoursOnly(workDay.getWorkEnd()), workDay.getWorkedHours(),                     
+                    work != null ? work.getHours() : "", work != null ? getDescription(work.getWorkType()) : "");
+
+            createSimpleRow(sheet, row++, styles.get(ExcelStyleType.VALUE), styles.get(ExcelStyleType.VALUE_PRICE),    
+                    "", "", "", "", "", "", 
+                    "", "");
+        }        
+
+        row++;
+        
+        createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TH), 
+                "Souhrn", "");
+
+        int index = 0;
+
+        // Fond
+        Row rowCell = sheet.createRow(row++);
+        Cell cell = rowCell.createCell(index++, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Fond");
+        
+        cell = rowCell.createCell(index++, CellType.NUMERIC);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+        cell.setCellValue((selectedUser.getFond() == null ? workMonthDTO.getSumWorkDays() : workMonthDTO.getSumWorkDays() * fond) * HOURS_IN_DAY);
+
+        // Svátky
+        index = 0;
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(index++, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Svátky");
+        
+        cell = rowCell.createCell(index++, CellType.NUMERIC);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+        cell.setCellValue(workMonthDTO.getSumHolidays() * HOURS_IN_DAY);
+
+        // Aditus
+        index = 0;
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(index++, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Aditus");
+        
+        cell = rowCell.createCell(index++, CellType.NUMERIC);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+        cell.setCellValue(workMonthDTO.getSumOnSiteDays() * HOURS_IN_DAY);
+        
+        for (WorkDTO work : workMonthDTO.getSums()) {
+            index = 0;
+            rowCell = sheet.createRow(row++);
+            cell = rowCell.createCell(index++, CellType.STRING);
+            cell.setCellStyle(styles.get(ExcelStyleType.TD));
+            cell.setCellValue(getDescription(work.getWorkType()));
+            
+            cell = rowCell.createCell(index++, CellType.NUMERIC);
+            cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+            cell.setCellValue(work.getHours() == null ? null : work.getHours());
+        }
+        
+
+        sheet.createFreezePane(2, 3);
+        sheet.setRepeatingRows(CellRangeAddress.valueOf("A1:H3"));
+
+        createFooter(sheet, false);
+        sheet.setFitToPage(true);
+        
+        if (out != null) {
+            workbook.write(out);
+        }
+        
+        return workbook;    
+    }
+
+    private void createSimpleRow(Sheet sheet, int rowIndex, CellStyle style, Object... values) {
+        createSimpleRow(sheet, rowIndex, style, style, values);
+    }
+    
+    private void createSimpleRow(Sheet sheet, int rowIndex, CellStyle style, CellStyle right, Object... values) {
+        Row row = sheet.createRow(rowIndex);
+
+        int index = 0;
+        boolean alignLeft = true;
+
+        for (Object value : values) {
+
+            if (value == null) {
+                Cell cell = row.createCell(index, CellType.BLANK);
+                cell.setCellStyle(style);
+                index++;
+                continue;
+            }
+
+            Cell cell = row.createCell(index, value instanceof Number ? CellType.NUMERIC : CellType.STRING);
+            cell.setCellStyle(style);
+
+            String svalue = value == null ? "" : "" + value;
+
+            if (value instanceof Boolean) {
+                svalue = Boolean.TRUE.equals(value) ? "1" : "0";
+            }
+
+            if (value instanceof Number) {
+                alignLeft = false;
+                cell.setCellValue(((Number) value).doubleValue());
+                cell.setCellStyle(alignLeft ? style : right);
+            } else {
+                if (svalue != null && !StringUtils.isEmpty(value)) {
+                    cell.setCellValue(svalue);
+                }
+            }
+
+            index++;
+        }
+    }
+
+    
+    private Map<ExcelStyleType, CellStyle> prepareStyles(XSSFWorkbook workbook, boolean wrapText) {
+
+        Map<ExcelStyleType, CellStyle> styles = new EnumMap<>(ExcelStyleType.class);
+
+        Font fontNor = workbook.createFont();
+        fontNor.setFontHeightInPoints((short) 18);
+        fontNor.setFontName("Verdana");
+        fontNor.setColor(IndexedColors.GREY_80_PERCENT.getIndex());
+
+        Font fontFet = workbook.createFont();
+        fontFet.setFontHeightInPoints((short) 9);
+        fontNor.setFontName("Verdana");
+        fontFet.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
+
+        Font fontFetTH = workbook.createFont();
+        fontFetTH.setFontHeightInPoints((short) 9);
+        fontNor.setFontName("Verdana");
+        fontFetTH.setColor(IndexedColors.WHITE.getIndex());
+
+        Font fontFetTH1 = workbook.createFont();
+        fontFetTH1.setFontHeightInPoints((short) 11);
+        fontNor.setFontName("Verdana");
+        fontFetTH1.setColor(IndexedColors.WHITE.getIndex());
+
+        Font fontValue = workbook.createFont();
+        fontValue.setFontHeightInPoints((short) 11);
+        fontNor.setFontName("Verdana");
+        fontValue.setColor(IndexedColors.GREY_80_PERCENT.getIndex());
+
+        XSSFCellStyle styleH1 = workbook.createCellStyle();
+        styleH1.setFont(fontNor);
+        styleH1.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleH1.setFillForegroundColor(COLOR_WHITE);
+        styles.put(ExcelStyleType.H1, styleH1);
+
+        XSSFCellStyle styleH1Right = workbook.createCellStyle();
+        styleH1Right.setFont(fontNor);
+        styleH1Right.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleH1Right.setFillForegroundColor(COLOR_WHITE);
+        styleH1Right.setAlignment(HorizontalAlignment.RIGHT);
+        styles.put(ExcelStyleType.H1_RIGHT, styleH1Right);
+
+        XSSFCellStyle styleH2 = workbook.createCellStyle();
+        styleH2.setFont(fontFet);
+        styleH2.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleH2.setFillForegroundColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.H2, styleH2);
+
+        XSSFCellStyle styleTH = workbook.createCellStyle();
+        styleTH.setFont(fontFetTH);
+        styleTH.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTH.setFillForegroundColor(COLOR_AQUA);
+        styleTH.setWrapText(wrapText);
+        styles.put(ExcelStyleType.TH, styleTH);
+
+        XSSFCellStyle styleTHRight = workbook.createCellStyle();
+        styleTHRight.setFont(fontFetTH);
+        styleTHRight.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTHRight.setFillForegroundColor(COLOR_AQUA);
+        styleTHRight.setWrapText(wrapText);
+        styleTHRight.setAlignment(HorizontalAlignment.RIGHT);
+        styles.put(ExcelStyleType.TH_RIGHT, styleTHRight);
+
+        XSSFCellStyle styleTH1 = workbook.createCellStyle();
+        styleTH1.setFont(fontFetTH1);
+        styleTH1.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTH1.setFillForegroundColor(COLOR_AQUA);
+        styleTH1.setWrapText(false);
+        styles.put(ExcelStyleType.TH1, styleTH1);
+
+        XSSFCellStyle styleTHRight1 = workbook.createCellStyle();
+        styleTHRight1.setFont(fontFetTH1);
+        styleTHRight1.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTHRight1.setFillForegroundColor(COLOR_AQUA);
+        styleTHRight1.setWrapText(false);
+        styleTHRight1.setAlignment(HorizontalAlignment.RIGHT);
+        styles.put(ExcelStyleType.TH1_RIGHT, styleTHRight1);
+
+        XSSFCellStyle styleValue = workbook.createCellStyle();
+        styleValue.setFont(fontValue);
+        styleValue.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleValue.setFillForegroundColor(COLOR_WHITE);
+        styleValue.setBorderBottom(BorderStyle.THIN);
+        styleValue.setBottomBorderColor(COLOR_SHADOW);
+        styles.put(ExcelStyleType.VALUE, styleValue);
+
+        XSSFCellStyle styleValueDate = workbook.createCellStyle();
+        styleValueDate.setFont(fontValue);
+        styleValueDate.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleValueDate.setFillForegroundColor(COLOR_WHITE);
+        styleValueDate.setDataFormat(workbook.createDataFormat().getFormat("dd.MM.yyyy"));
+        styleValueDate.setBorderBottom(BorderStyle.THIN);
+        styleValueDate.setBottomBorderColor(COLOR_WHITE);
+        styleValueDate.setAlignment(HorizontalAlignment.LEFT);
+        styles.put(ExcelStyleType.VALUE_DATE, styleValueDate);
+
+        XSSFCellStyle styleTD = workbook.createCellStyle();
+        styleTD.setFont(fontValue);
+        styleTD.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTD.setFillForegroundColor(COLOR_WHITE);
+        styleTD.setWrapText(false);
+//        styleTD.setBorderBottom(BorderStyle.THIN);
+//        styleTD.setBottomBorderColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.TD, styleTD);
+
+        XSSFCellStyle styleTDPrice = workbook.createCellStyle();
+        styleTDPrice.setFont(fontValue);
+        styleTDPrice.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTDPrice.setFillForegroundColor(COLOR_WHITE);
+        styleTDPrice.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        styleTDPrice.setAlignment(HorizontalAlignment.RIGHT);
+//        styleTDPrice.setBorderBottom(BorderStyle.THIN);
+//        styleTDPrice.setBottomBorderColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.TD_PRICE, styleTDPrice);
+
+        XSSFCellStyle styleValuePrice = workbook.createCellStyle();
+        styleValuePrice.setFont(fontValue);
+        styleValuePrice.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleValuePrice.setFillForegroundColor(COLOR_WHITE);
+        styleValuePrice.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        styleValuePrice.setAlignment(HorizontalAlignment.RIGHT);
+        styleValuePrice.setBorderBottom(BorderStyle.THIN);
+        styleValuePrice.setBottomBorderColor(COLOR_SHADOW);
+        styles.put(ExcelStyleType.VALUE_PRICE, styleValuePrice);
+
+        XSSFCellStyle styleTDDate = workbook.createCellStyle();
+        styleTDDate.setFont(fontValue);
+        styleTDDate.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTDDate.setFillForegroundColor(COLOR_WHITE);
+        styleTDDate.setDataFormat(workbook.createDataFormat().getFormat("dd.MM.yyyy"));
+        styleTDDate.setBottomBorderColor(COLOR_SILVER);
+        styleTDDate.setAlignment(HorizontalAlignment.RIGHT);
+        styleTDDate.setBorderBottom(BorderStyle.THIN);
+        styleTDDate.setBottomBorderColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.TD_DATE, styleTDDate);
+
+        return styles;
+    }
+
+    
+    private void createFooter(Sheet sheet, boolean landscape) {
+        sheet.setMargin(Sheet.RightMargin, 0.25);
+        sheet.setMargin(Sheet.LeftMargin, 0.25);
+        sheet.setMargin(Sheet.TopMargin, 0.75);
+        sheet.setMargin(Sheet.BottomMargin, 0.75);
+        sheet.setAutobreaks(true);
+
+        PrintSetup ps = sheet.getPrintSetup();
+        ps.setLandscape(landscape);
+        ps.setPaperSize(PrintSetup.A4_PAPERSIZE);
+        ps.setFitWidth((short) 0);
+        ps.setFitHeight((short) 1);
+
+        Footer footer = sheet.getFooter();
+        footer.setLeft("© 2010-2020 Karumien s.r.o. - na základě licence i24 pro web/informační systém.");
+        footer.setRight("Strana " + HeaderFooter.page() + " z " + HeaderFooter.numPages());
+    }
+
+
 }

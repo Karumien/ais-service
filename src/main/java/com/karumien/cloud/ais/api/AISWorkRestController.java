@@ -1,5 +1,6 @@
 package com.karumien.cloud.ais.api;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.DayOfWeek;
@@ -9,6 +10,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
@@ -18,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,6 +45,15 @@ import com.karumien.cloud.ais.service.AISService;
 @RestController
 @RequestMapping(path = "/api")
 public class AISWorkRestController implements WorkApi {
+    
+    private static final String ATTACHMENT_FILENAME = "attachment; filename=";
+
+    private static final String CONTENT_DISPOSITION = "Content-disposition";
+//    private static final String CONTENT_TYPE = "content-type";
+
+    /** MediaType Application Excel Openformat */
+    private static final String APPLICATION_EXCEL_VALUE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
     
     @Autowired
     private ModelMapper mapper;
@@ -70,6 +82,39 @@ public class AISWorkRestController implements WorkApi {
         return new ResponseEntity<>(aisService.getWorkUsers(username), HttpStatus.OK);
     }
     
+
+    /**
+     * GET /work/export/xls : Generate export workdays
+     *
+     * @param response
+     *            {@link HttpServletResponse}
+     * @throws IOException
+     *             on IO error
+     */
+    @RequestMapping(value = "/work/export", produces = { APPLICATION_EXCEL_VALUE }, method = RequestMethod.GET)
+    public void exportWorkDays(@NotNull @Valid @RequestParam(value = "role", required = true) String role,
+            @Valid @RequestParam(value = "username", required = false) String username,
+            @Valid @RequestParam(value = "month", required = false) Integer month, 
+            @Valid @RequestParam(value = "year", required = false) Integer year,
+            HttpServletResponse response) throws IOException {
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        if (month == null) {
+            month = LocalDate.now().getMonthValue();
+        }
+
+        if (username == null) {
+            username = role;
+        }        
+
+        String yearmonth = year + "." + (month < 10 ? "0" : "") + month;
+        response.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + yearmonth + "-" + username + ".xlsx");
+        aisService.exportWorkDays(year, month, username, response.getOutputStream());
+    }
+
     /**
      * HTML formated Users on site.
      * 
@@ -108,16 +153,22 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<option value=\"").append(i+1).append("\"").append(month.equals(i+1) ? " selected" : "");
             sb.append(">").append(months.get(i)).append("</option>");
         }
-        sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\"></td>");
+        sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">");
+        
+        UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
+
+        //if (selectedUser.is)
+        sb.append("<button class=\"buttonSubmit\" onclick=\"window.location.href='/"+ (Boolean.TRUE.equals(redirect) ? "/api/work/export" : "/ais-export.jsp" ) + "\">Exportovat</button>");
+        
+        sb.append("</td>");
         
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
                             
-        UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
-        
         for (UserInfoDTO user : aisService.getWorkUsers(role)) {
             sb.append("<option value=\"").append(user.getUsername()).append("\"").append(username.equals(user.getUsername()) ? " selected" : "");
             sb.append(">").append(user.getName()).append("</option>");            
         }
+        
         sb.append("</select><input type=\"submit\" class=\"buttonSubmit\" value=\"Nastavit\"/></td></tr></form>");                
         
         sb.append("<tr>"
@@ -135,13 +186,13 @@ public class AISWorkRestController implements WorkApi {
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
             sb.append("<tr>");
-            sb.append("<td class=\"i24_tableItem\"><i>").append(workDay.getDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).append("</i></td>");
+            sb.append("<td class=\"i24_tableItem\"><i>").append(aisService.date(workDay.getDate())).append("</i></td>");
             sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
             sb.append("<td class=\"i24_tableItem\" align=\"center\">")
                 .append(hoursOnly(workDay.getLunchStart())).append(workDay.getLunchStart() != null ? " - " : "").append(hoursOnly(workDay.getLunchEnd())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
-            sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(hours(workDay.getWorkedHours())).append("</b></td>");
+            sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b></td>");
             
             if (workDay.getDate().getDayOfWeek() != DayOfWeek.SATURDAY
                 && workDay.getDate().getDayOfWeek() != DayOfWeek.SUNDAY 
@@ -157,19 +208,21 @@ public class AISWorkRestController implements WorkApi {
                 
                 WorkDTO work = workDay.getWorks().get(0);
                 
-                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"").append(work != null ? hours(work.getHours()) : "")
+                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                    .append(work != null ? aisService.hours(work.getHours()) : "")
                     .append("\"><select class=\"unvisiblelines\">");
                 for (WorkTypeDTO type: WorkTypeDTO.values()) {
                     sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType() == type ? " selected" : "");
-                    sb.append(">").append(getDescription(type)).append("</option>");
+                    sb.append(">").append(aisService.getDescription(type)).append("</option>");
                 }
                 sb.append("</select></td>");
 
-                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"").append(work != null ? hours(work.getHours2()) : "")
+                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                    .append(work != null ? aisService.hours(work.getHours2()) : "")
                     .append("\"><select class=\"unvisiblelines\">");
                 for (WorkTypeDTO type: WorkTypeDTO.values()) {
                     sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType2() == type ? " selected" : "");
-                    sb.append(">").append(getDescription(type)).append("</option>");
+                    sb.append(">").append(aisService.getDescription(type)).append("</option>");
                 }
                 sb.append("</select></td>");
 
@@ -190,24 +243,24 @@ public class AISWorkRestController implements WorkApi {
 
         sb1.append("<td class=\"i24_tableItem\"><i>").append("Fond").append("</i></td>");
         sb2.append("<td class=\"i24_tableItem\"><b>").append(
-                selectedUser.getFond() == null ?  days(workMonthDTO.getSumWorkDays()) : 
-                    days(workMonthDTO.getSumWorkDays() * fond) + "</b> / " + days(workMonthDTO.getSumWorkDays())
+                selectedUser.getFond() == null ? aisService.days(workMonthDTO.getSumWorkDays()) : 
+                    aisService.days(workMonthDTO.getSumWorkDays() * fond) + "</b> / " + aisService.days(workMonthDTO.getSumWorkDays())
         ).append("</b></td>");
         
         sb1.append("<td class=\"i24_tableItem\"><i>").append("Svátky").append("</i></td>");
-        sb2.append("<td class=\"i24_tableItem\"><b>").append(days(workMonthDTO.getSumHolidays())).append("</b></td>");
+        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumHolidays())).append("</b></td>");
 
         sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i>").append("Aditus").append("</i></td>");
         
-        sb2.append("<td class=\"i24_tableItem\"><b>").append(days(workMonthDTO.getSumOnSiteDays())).append("</b>" + 
-                (currentMonth ?  " / " + days(countWorkDays * fond) : "")
+        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumOnSiteDays())).append("</b>" + 
+                (currentMonth ?  " / " + aisService.days(countWorkDays * fond) : "")
           ).append("</b></td>");
         
         
         for (WorkDTO work : workMonthDTO.getSums()) {
-            sb1.append("<td class=\"i24_tableItem\"><i>").append(getDescription(work.getWorkType())).append("</i></td>");
+            sb1.append("<td class=\"i24_tableItem\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
             sb2.append("<td class=\"i24_tableItem\"><b>")
-                    .append(days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
+                    .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
         }
         
         sb2.append("</tr>");
@@ -215,6 +268,10 @@ public class AISWorkRestController implements WorkApi {
         sb1.append("</tr></table>");
         sb.append(sb1);
         return sb.toString();
+    }
+    
+    private String hoursOnly(@Valid WorkHourDTO work) {
+        return "<span style=\"color:" + aisService.hoursOnly(work) + "</span>";
     }
 
     private String getDescription(@Valid WorkDayTypeDTO workDayType) {
@@ -227,51 +284,6 @@ public class AISWorkRestController implements WorkApi {
             return "";
         }
     }
-    
-    private String getDescription(@Valid WorkTypeDTO workType) {
-        switch (workType) {
-        case WORK:
-            return "Odpracováno";            
-        case HOLIDAY:
-            return "Dovolená";
-        case HOMEOFFICE:
-            return "Práce z domova";
-        case SICKDAY:
-            return "Nemocné dny";
-        case SICKNESS:
-            return "Lékař";
-        case TIMEOFF:
-            return "Neplacené volno";
-        default:
-            return "";
-        }
-    }
-
-    private String hours(Double workedHours) {
-        if (workedHours == null) {
-            return "";
-        }
-        NumberFormat formatter = new DecimalFormat("#0.00");     
-        return formatter.format(workedHours);
-    }
-    
-    private String days(Number workedHours) {
-        if (workedHours == null) {
-            return "";
-        }
-        NumberFormat formatter = new DecimalFormat("#0.00");     
-        return formatter.format(workedHours.doubleValue()*AISService.HOURS_IN_DAY);
-    }
-
-    private String hoursOnly(@Valid WorkHourDTO work) {
-        if (work == null || work.getDate() == null) {
-            return "";
-        }
-        
-        return "<span style=\"color:" + (work.isCorrected() ? "#888888":"#000") +"\">" +
-                work.getDate().format(DateTimeFormatter.ofPattern("HH:mm")) + "</span>";
-    }
-    
     @Override
     public ResponseEntity<Long> setWork(@NotNull @Valid LocalDate date, @NotNull @Valid String username,
             @Valid String workType, @Valid String hours, @Valid String workType2, @Valid String hours2,
