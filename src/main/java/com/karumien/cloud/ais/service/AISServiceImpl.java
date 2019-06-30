@@ -171,8 +171,10 @@ public class AISServiceImpl implements AISService {
 
             WorkDayDTO workDay = new WorkDayDTO();
             workDay.setDate(date);
-            workDay.setWorks(works.stream().filter(w -> w.getDate().equals(date)).map(w -> mapper.map(w, WorkDTO.class))
-                    .collect(Collectors.toList()));
+            Work worked = works.stream().filter(w -> w.getDate().equals(date)).findFirst().orElse(null);
+            if (worked != null) {
+                workDay.setWork(mapper.map(worked, WorkDTO.class));
+            }
             workDay.setWorkDayType(getWorkDayType(date));
 
             List<ViewPass> passDays = pass.stream().filter(p -> p.getDay().equals(daySelected))
@@ -481,11 +483,7 @@ public class AISServiceImpl implements AISService {
         WorkMonthDTO workMonthDTO = getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
 
-            WorkDTO work = null;
-
-            if (!CollectionUtils.isEmpty(workDay.getWorks())) {
-                work = workDay.getWorks().get(0);
-            }
+            WorkDTO work = workDay.getWork();
             
             createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TD), styles.get(ExcelStyleType.TD_PRICE),    
                     date(workDay.getDate()), getDescription(workDay.getWorkDayType()), hoursOnly(workDay.getWorkStart()), 

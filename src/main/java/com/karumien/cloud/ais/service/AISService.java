@@ -87,6 +87,8 @@ public interface AISService {
         switch (workType) {
         case WORK:
             return "Odpracováno";            
+        case TRIP:
+            return "Služební cesta";            
         case HOLIDAY:
             return "Dovolená";
         case HOMEOFFICE:

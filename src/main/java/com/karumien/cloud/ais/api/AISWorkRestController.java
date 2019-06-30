@@ -156,12 +156,14 @@ public class AISWorkRestController implements WorkApi {
         sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">");
         
         UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
+        UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
 
-        //if (selectedUser.is)
-        sb.append("<button class=\"buttonSubmit\" onclick=\"window.location.href='/"+ (Boolean.TRUE.equals(redirect) ? "/api/work/export" : "/ais-export.jsp" ) + "\">Exportovat</button>");
-        
+        if (roleUser.isRoleAdmin()) {
+            sb.append("<a href=\""+ (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222" ) 
+                    + "/api/work/export?username="+username+"&role="+role+"&year="+year+"&month="+month +"\">");
+            sb.append("<img src=\"/img/printer.gif\" width=\"15\" height=\"16\" border=\"0\"></a>");
+        }
         sb.append("</td>");
-        
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
                             
         for (UserInfoDTO user : aisService.getWorkUsers(role)) {
@@ -169,7 +171,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append(">").append(user.getName()).append("</option>");            
         }
         
-        sb.append("</select><input type=\"submit\" class=\"buttonSubmit\" value=\"Nastavit\"/></td></tr></form>");                
+        sb.append("</select></td></tr></form>");                
         
         sb.append("<tr>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Datum</td>"
@@ -202,11 +204,11 @@ public class AISWorkRestController implements WorkApi {
                     countWorkDays ++;
                 }
                 
-                if (CollectionUtils.isEmpty(workDay.getWorks())) {
+                if (workDay.getWork() == null) {
                     continue;
                 }
                 
-                WorkDTO work = workDay.getWorks().get(0);
+                WorkDTO work = workDay.getWork();
                 
                 sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours()) : "")

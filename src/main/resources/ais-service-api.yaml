@@ -164,7 +164,7 @@ definitions:
     enum: [WORKDAY, NATIONAL_HOLIDAY, COMPANY_HOLIDAY, SATURDAY, SUNDAY]
   WorkType:
     type: string
-    enum: [NONE, WORK, TRIP, HOLIDAY, HOMEOFFICE, SICKDAY, TIMEOFF, SICKNESS]     
+    enum: [NONE, WORK, HOMEOFFICE, TRIP, SICKDAY, SICKNESS, TIMEOFF, HOLIDAY]     
   Pass:
     type: object
     properties:
@@ -235,7 +235,9 @@ definitions:
     example:
       id: 20
       hours: 4.0
-      type: WORK
+      workType: WORK
+      hours2: 4.0
+      workType2: TRIP
   WorkHour:
     type: object
     properties:     
@@ -264,10 +266,8 @@ definitions:
       workedHours:
         type: number
         format: double
-      works:
-        type: array
-        items:
-          $ref: "#/definitions/Work"
+      work:
+        $ref: "#/definitions/Work"
     example:
       id: 282
       date: '2017-07-21'
