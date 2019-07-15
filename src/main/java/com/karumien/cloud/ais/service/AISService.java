@@ -92,8 +92,6 @@ public interface AISService {
             return "Služební cesta";
         case HOLIDAY:
             return "Dovolená";
-        case HOMEOFFICE:
-            return "Práce z domova";
         case SICKDAY:
             return "Nemocné dny";
         case SICKNESS:

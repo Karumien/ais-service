@@ -51,5 +51,8 @@ public class Work implements Serializable {
     @Column(name = "WORK_DAY_TYPE", nullable = false, insertable = true, updatable = false)
     @Enumerated(EnumType.STRING)
     private WorkDayTypeDTO workDayType;
+    
+    @Column(name = "DESCRIPTION", nullable = true)
+    private String description;
 
 }

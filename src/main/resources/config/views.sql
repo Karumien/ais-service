@@ -75,5 +75,5 @@ select * from VIEW_DATPRUCHUDAL_TODAY t where t.id in (
 select id from  VIEW_DATPRUCHUDAL_LAST_ID)
 order by t.ETIME desc;
 
-
+ALTER TABLE AIS_WORK ADD DESCRTIPTION varchar(1000);
 
