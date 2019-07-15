@@ -136,7 +136,7 @@ definitions:
     enum: [WORKDAY, NATIONAL_HOLIDAY, COMPANY_HOLIDAY, SATURDAY, SUNDAY]
   WorkType:
     type: string
-    enum: [NONE, WORK, HOMEOFFICE, TRIP, SICKDAY, SICKNESS, TIMEOFF, HOLIDAY]     
+    enum: [NONE, WORK, TRIP, SICKDAY, SICKNESS, TIMEOFF, HOLIDAY]     
   Pass:
     type: object
     properties:
