@@ -205,6 +205,8 @@ definitions:
         $ref: "#/definitions/WorkType"
       workDayType: 
         $ref: "#/definitions/WorkDayType"
+      description:
+        type: string
     example:
       id: 20
       hours: 4.0
