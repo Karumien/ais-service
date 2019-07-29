@@ -187,7 +187,7 @@ public class AISWorkRestController implements WorkApi {
         if ((roleUser.isRoleAdmin() || roleUser.isRoleHip()) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay)) {
             sb.append("<a href=\"#\" class=\"buttonSubmit\" title=\"Schválit vybraný měsíc dané osobě\">&nbsp; Schválit</a>");
         }
-        sb.append("&nbsp;<a href=\"/works.do?action=list&object=native_works&clear=1\" class=\"buttonSubmit\">&nbsp; Výkazy zakázky</a></td></tr></form>");                
+        sb.append("&nbsp;<a href=\"/works.do?action=list&object=native_works&clear=1\" target=\"_parent\" class=\"buttonSubmit\">&nbsp; Výkazy zakázky</a></td></tr></form>");                
         
         sb.append("<form id=\"exportForm\" action=\"" + (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") + "/api/work/export?username=" 
                 +username+"&role="+role+"&year="+year+"&month="+month + "\" method=\"post\">");
@@ -204,7 +204,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<a href=\"#\" onclick=\"document.getElementById('exportForm').submit();\">");
             sb.append("<img onclick=\"this.form.submit();\" src=\"/img/printer.gif\" style=\"position: relative; top: 4px; margin-left: 6px; width: 15px; height: 16px;\" border=\"0\"/></a>");
         //}
-        sb.append("</td><td class=\"i24_tableHead menuline\">&nbsp; Poznámka (hodiny/zakázka)</td></tr></form>");
+        sb.append("</td><td></td><td class=\"i24_tableHead menuline\">&nbsp; Poznámka (hodiny/zakázka)</td></tr></form>");
 
         int countWorkDays = 0;
         double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
