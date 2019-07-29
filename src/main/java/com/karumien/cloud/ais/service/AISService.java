@@ -87,7 +87,7 @@ public interface AISService {
     default String getDescription(@Valid WorkTypeDTO workType) {
         switch (workType) {
         case WORK:
-            return "Odpracováno";
+            return "Kancelář";
         case TRIP:
             return "Služební cesta";
         case HOLIDAY:

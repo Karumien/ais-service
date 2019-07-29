@@ -174,6 +174,9 @@ public class AISWorkRestController implements WorkApi {
         
         UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
         UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
+        if (roleUser == null) {
+            roleUser = selectedUser;
+        }
 
         sb.append("</td>");
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
@@ -184,7 +187,7 @@ public class AISWorkRestController implements WorkApi {
         }
         
         sb.append("</select></td><td></td><td align=\"right\">");
-        if ((roleUser.isRoleAdmin() || roleUser.isRoleHip()) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay)) {
+        if ((Boolean.TRUE.equals(roleUser.isRoleAdmin()) || Boolean.TRUE.equals(roleUser.isRoleHip())) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay)) {
             sb.append("<a href=\"#\" class=\"buttonSubmit\" title=\"Schválit vybraný měsíc dané osobě\">&nbsp; Schválit</a>");
         }
         sb.append("&nbsp;<a href=\"/works.do?action=list&object=native_works&clear=1\" target=\"_parent\" class=\"buttonSubmit\">&nbsp; Výkazy zakázky</a></td></tr></form>");                
@@ -197,7 +200,7 @@ public class AISWorkRestController implements WorkApi {
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td><td><span title=\"Validovat docházku ve vybraný den\">(?)</span></td><td>&nbsp;</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td><td><span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
 
         //if (roleUser.isRoleAdmin()) {
@@ -226,10 +229,12 @@ public class AISWorkRestController implements WorkApi {
                 .append(hoursOnly(workDay.getLunchStart())).append(workDay.getLunchStart() != null ? " - " : "").append(hoursOnly(workDay.getLunchEnd())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
             sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b></td>");
-            
-            if (roleUser.isRoleHip() || roleUser.isRoleAdmin()) {
-                sb.append("<td class=\"i24_tableItem\" align=\"right\"><input type=\"checkbox\" name=\"validated\" checked=\"checked\"/><td>");
+
+            String ro = " disabled=\"disabled\" ";
+            if (Boolean.TRUE.equals(roleUser.isRoleHip()) || Boolean.TRUE.equals(roleUser.isRoleAdmin())) {
+                ro = "";
             }
+            sb.append("<td class=\"i24_tableItem\" align=\"right\"><input type=\"checkbox\" "+ ro + " name=\"validated\" /><td>");
             
             if (workDay.getDate().getDayOfWeek() != DayOfWeek.SATURDAY
                 && workDay.getDate().getDayOfWeek() != DayOfWeek.SUNDAY 
