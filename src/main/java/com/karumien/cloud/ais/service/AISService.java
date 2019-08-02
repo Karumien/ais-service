@@ -8,8 +8,7 @@ package com.karumien.cloud.ais.service;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -45,8 +44,7 @@ public interface AISService {
         if (workedHours == null) {
             return "";
         }
-        NumberFormat formatter = new DecimalFormat("#0.00");
-        return formatter.format(workedHours);
+        return formatAsTime(workedHours);
     }
 
     default String date(LocalDate date) {
@@ -58,11 +56,29 @@ public interface AISService {
     }
 
     default String days(Number workedHours) {
-        if (workedHours == null) {
-            return "";
+        return formatAsTime(daysInHours(workedHours.doubleValue()));
+    }
+
+    default String formatAsTime(Number daysInHours) {
+        if (daysInHours == null) {
+            return "0:00";
         }
-        NumberFormat formatter = new DecimalFormat("#0.00");
-        return formatter.format(workedHours.doubleValue() * AISService.HOURS_IN_DAY);
+        
+        boolean sign = daysInHours.doubleValue() < 0;
+        
+        double value = Math.abs(daysInHours.doubleValue());
+        
+        int minutes = (int) Math.floor(60d * (value - Math.floor(value)));
+        int hours = (int) Math.floor(value);
+        
+        return (sign ? "-" : "") + hours + ":" + (minutes < 10 ? "0" : "") + minutes;
+    }
+
+    default Number daysInHours(Number workedHours) {
+        if (workedHours == null) {
+            return BigDecimal.ZERO;
+        }
+        return workedHours.doubleValue() * AISService.HOURS_IN_DAY;
     }
 
     default String hoursOnly(@Valid WorkHourDTO work) {
@@ -184,5 +200,10 @@ public interface AISService {
      *            selected username
      */
     void setWork(@Valid WorkDTO work, @NotNull @Valid String username);
+    
+    default boolean isWorkingType(WorkTypeDTO workType) {
+        return workType == WorkTypeDTO.WORK || workType == WorkTypeDTO.SICKNESS || workType == WorkTypeDTO.TRIP;
+    }
+
 
 }

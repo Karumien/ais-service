@@ -207,6 +207,10 @@ definitions:
         $ref: "#/definitions/WorkDayType"
       description:
         type: string
+      hoursText:
+        type: string
+      hours2Text:
+        type: string
     example:
       id: 20
       hours: 4.0
@@ -239,6 +243,9 @@ definitions:
       workEnd:
         $ref: "#/definitions/WorkHour"
       workedHours:
+        type: number
+        format: double
+      saldo:
         type: number
         format: double
       work:
@@ -282,6 +289,9 @@ definitions:
       sumWorkDays:
         type: integer
       sumOnSiteDays:
+        type: number
+        format: double
+      saldo:
         type: number
         format: double
     example:

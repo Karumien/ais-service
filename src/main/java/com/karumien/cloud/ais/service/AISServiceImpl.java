@@ -321,6 +321,16 @@ public class AISServiceImpl implements AISService {
             workDay.setWorkedHours(workStart == null ? null
                     : BigDecimal.valueOf(workedMinutes / 60d).setScale(2, RoundingMode.FLOOR).doubleValue());
             sumOnSiteMinutes += workedMinutes;
+
+            double working = 0;
+            if (workDay.getWork() != null && isWorkingType(workDay.getWork().getWorkType()) && workDay.getWork().getHours() != null) {
+                working += workDay.getWork().getHours();
+            }
+            if (workDay.getWork() != null && isWorkingType(workDay.getWork().getWorkType2()) && workDay.getWork().getHours2() != null) {
+                working += workDay.getWork().getHours2();
+            }
+                        
+            workDay.setSaldo((workDay.getWorkedHours() == null ? 0 : workDay.getWorkedHours()) - working);
             workMonth.addWorkDaysItem(workDay);
         }
 
@@ -355,6 +365,7 @@ public class AISServiceImpl implements AISService {
                 .setScale(2, RoundingMode.FLOOR).doubleValue());
         return workMonth;
     }
+
 
     private WorkDayTypeDTO getWorkDayType(LocalDate date) {
 
@@ -412,8 +423,41 @@ public class AISServiceImpl implements AISService {
         }
 
         mapper.map(work, workUpdated);
+        workUpdated.setHours(realHours(work.getHoursText()));
+        workUpdated.setHours2(realHours(work.getHours2Text()));
         workRepository.save(workUpdated);
 
+    }
+    
+    public static Double realHours(String value) {
+
+        if (StringUtils.isEmpty(value)) {
+            return null;
+        }
+
+        try {
+            value = value.replaceAll(",", ".");
+
+            if (value.indexOf(":") > 0) {
+
+                int hours = Math.abs(Integer.valueOf(value.substring(0, value.indexOf(":"))));
+                int mins = Math.abs(Integer.valueOf(value.substring(value.indexOf(":") + 1)));
+                if (value.startsWith("-")) {
+                    mins = - mins;
+                }
+
+                return hours + mins / 60d;
+
+            } else {
+
+                return Double.valueOf(value);
+
+            }
+            
+        } catch (Exception e) {
+        }
+
+        return null;
     }
     
     /**

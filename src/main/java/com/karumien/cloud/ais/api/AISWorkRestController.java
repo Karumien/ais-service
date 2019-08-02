@@ -153,8 +153,8 @@ public class AISWorkRestController implements WorkApi {
         + "  ||  form.description.value != form.originalDescription.value"
         + ") {"
         + "  xhttp.send('{ \"id\": ' + form.id.value + '," 
-        + "        \"hours\": ' + (!form.hours.value ? null : form.hours.value.replace(',','.')) + ',"
-        + "        \"hours2\": ' + (!form.hours2.value ? null : form.hours2.value.replace(',','.')) + ',"
+        + "        \"hoursText\": ' + (!form.hours.value ? null : '\"' + form.hours.value + '\"') + ',"
+        + "        \"hours2Text\": ' + (!form.hours2.value ? null : '\"' + form.hours2.value + '\"') + ',"
         + "        \"workType\": \"' + form.workType.value + '\","
         + "        \"workType2\": \"' + form.workType2.value + '\","
         + "        \"description\": \"' + form.description.value + '\" }');"
@@ -200,7 +200,8 @@ public class AISWorkRestController implements WorkApi {
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td><td><span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td>&nbsp;</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem <span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td>Saldo</td>"
+            + "<td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
 
         //if (roleUser.isRoleAdmin()) {
@@ -228,18 +229,16 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<td class=\"i24_tableItem\" align=\"center\">")
                 .append(hoursOnly(workDay.getLunchStart())).append(workDay.getLunchStart() != null ? " - " : "").append(hoursOnly(workDay.getLunchEnd())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
-            sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b></td>");
 
             String ro = " disabled=\"disabled\" ";
             if (Boolean.TRUE.equals(roleUser.isRoleHip()) || Boolean.TRUE.equals(roleUser.isRoleAdmin())) {
                 ro = "";
             }
-            sb.append("<td class=\"i24_tableItem\" align=\"right\"><input type=\"checkbox\" "+ ro + " name=\"validated\" /><td>");
             
             if (workDay.getDate().getDayOfWeek() != DayOfWeek.SATURDAY
                 && workDay.getDate().getDayOfWeek() != DayOfWeek.SUNDAY 
                 && workDay.getWorkDayType() != WorkDayTypeDTO.NATIONAL_HOLIDAY) {
-
+                
                 if (currentMonth && actualMonthDay.isAfter(workDay.getDate())) {
                     countWorkDays ++;
                 }
@@ -247,7 +246,10 @@ public class AISWorkRestController implements WorkApi {
                 if (workDay.getWork() == null) {
                     continue;
                 }
-                                
+
+                sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b> <input type=\"checkbox\" " + ro + " name=\"validated\" /></td>");
+                sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("<td>");
+
                 sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"id\" value=\""+ work.getId() +"\">"
                         + "<input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" type=\"text\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours()) : "")
@@ -287,32 +289,50 @@ public class AISWorkRestController implements WorkApi {
         sb.append("</table>");
 
         
-        StringBuilder sb1 = new StringBuilder("<table cellspacing=\"5\" class=\"aditus\"><tr><td colspan=\"5\"><hr/></td></tr><tr>");
+        StringBuilder sb1 = new StringBuilder("<table cellspacing=\"0\" cellpadding=\"5\" class=\"aditus\"><tr><td colspan=\"5\"><hr/></td></tr><tr>");
         StringBuilder sb2 = new StringBuilder("<tr>");
 
+        sb1.append("<td class=\"i24_tableItem\"><i>").append("Svátky").append("</i></td>");
+        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumHolidays())).append("</b></td>");
 
-        sb1.append("<td class=\"i24_tableItem\"><i>").append("Fond").append("</i></td>");
+        sb1.append("<td class=\"i24_tableItem\"><i><b>").append("Fond").append("</b></i></td>");
         sb2.append("<td class=\"i24_tableItem\"><b>").append(
                 selectedUser.getFond() == null ? aisService.days(workMonthDTO.getSumWorkDays()) : 
                     aisService.days(workMonthDTO.getSumWorkDays() * fond) + "</b> / " + aisService.days(workMonthDTO.getSumWorkDays())
         ).append("</b></td>");
         
-        sb1.append("<td class=\"i24_tableItem\"><i>").append("Svátky").append("</i></td>");
-        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumHolidays())).append("</b></td>");
 
-        sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i>").append("Aditus").append("</i></td>");
-        
+        sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i>").append("Aditus").append("</i></td>");        
         sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumOnSiteDays())).append("</b>" + 
                 (currentMonth ?  " / " + aisService.days(countWorkDays * fond) : "")
           ).append("</b></td>");
         
+        double worked = 0;
         
+        // work types
         for (WorkDTO work : workMonthDTO.getSums()) {
-            sb1.append("<td class=\"i24_tableItem\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
-            sb2.append("<td class=\"i24_tableItem\"><b>")
-                    .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
+            if (aisService.isWorkingType(work.getWorkType())) {
+                worked += work.getHours() == null ? 0 : work.getHours() / AISService.HOURS_IN_DAY;
+                sb1.append("<td class=\"i24_tableItem\" style=\"background-color: #CFCFCF\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
+                sb2.append("<td class=\"i24_tableItem\" style=\"background-color: #CFCFCF\"><b>")
+                        .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
+            }
         }
         
+        sb1.append("<td class=\"i24_tableItem\"><i><b>").append("Odpracováno").append("</b></i></td>");
+        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(worked)).append("</b></td>");
+                
+        // non-work types
+        for (WorkDTO work : workMonthDTO.getSums()) {
+            if (!aisService.isWorkingType(work.getWorkType())) {
+                sb1.append("<td class=\"i24_tableItem\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
+                sb2.append("<td class=\"i24_tableItem\"><b>")
+                        .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
+            }
+        }
+
+        sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
+        sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo((workMonthDTO.getSumOnSiteDays() - worked) * AISService.HOURS_IN_DAY)).append("</b></td>");
         sb2.append("</tr>");
         sb1.append(sb2);
         sb1.append("</tr></table>");
@@ -320,6 +340,14 @@ public class AISWorkRestController implements WorkApi {
         return sb.toString();
     }
     
+    private String saldo(Double value) {
+        if (value == null) {
+            return "";
+        }
+        
+        return "<span style=\"color:" + (value < 0 ? "#FF4136" : "#2ECC40") + "\">" + aisService.formatAsTime(value) + "</span>";
+    }
+
     private String hoursOnly(@Valid WorkHourDTO work) {
         if (work == null || work.getDate() == null) {
             return "";
