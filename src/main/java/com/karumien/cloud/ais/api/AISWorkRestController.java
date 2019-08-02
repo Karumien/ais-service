@@ -200,7 +200,7 @@ public class AISWorkRestController implements WorkApi {
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem <span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td>Saldo</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem <span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td class=\"i24_tableHead menuline\" align=\"right\">Saldo</td>"
             + "<td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
 
