@@ -313,8 +313,8 @@ public class AISWorkRestController implements WorkApi {
         for (WorkDTO work : workMonthDTO.getSums()) {
             if (aisService.isWorkingType(work.getWorkType())) {
                 worked += work.getHours() == null ? 0 : work.getHours() / AISService.HOURS_IN_DAY;
-                sb1.append("<td class=\"i24_tableItem\" style=\"background-color: #CFCFCF\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
-                sb2.append("<td class=\"i24_tableItem\" style=\"background-color: #CFCFCF\"><b>")
+                sb1.append("<td class=\"i24_tableItem\" style=\"background-color: #7FDBFF\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
+                sb2.append("<td class=\"i24_tableItem\" style=\"background-color: #7FDBFF\"><b>")
                         .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
             }
         }
