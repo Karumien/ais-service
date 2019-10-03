@@ -186,7 +186,7 @@ public class AISServiceImpl implements AISService {
         
         for (Pristup p : aDochazkaService.getAccesses(today)) {
 
-            if (!p.getKodPrace().isNil() && p.getKodPrace().getValue() == 2) {
+            if (!p.getKlavesa1().isNil() && p.getKlavesa1().getValue() == 2) {
             
                 String id = p.getCisloUzivatele().getValue();            
                 Uzivatel u = users.get(id);
@@ -197,7 +197,7 @@ public class AISServiceImpl implements AISService {
                 user.setId(user.getCode());
                 
                 Oddeleni oddeleni = u.getOddeleni().getValue().getOddeleni().stream().findFirst().orElse(null); 
-                user.setDepartment(oddeleni != null ? oddeleni.getNazev().toString(): null);
+                user.setDepartment(oddeleni != null ? oddeleni.getNazev().getValue(): null);
             
                 PassDTO pass = new PassDTO();
                 pass.setDate(toOffsetDateTime(p.getDatum()));
