@@ -166,7 +166,7 @@ public class AISServiceImpl implements AISService {
             onsite.add(pass);
         }
 
-        onsite.addAll(findAllLeaved().stream().filter(u -> !ids.contains(u.getId())).collect(Collectors.toList()));
+        onsite.addAll(findAllLeaved().stream().filter(u -> !ids.contains(u.getPerson().getId())).collect(Collectors.toList()));
         
         Collections.sort(onsite, new Comparator<PassDTO>() {
 
