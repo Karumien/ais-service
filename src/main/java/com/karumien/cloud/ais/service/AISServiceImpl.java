@@ -22,9 +22,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -143,15 +145,18 @@ public class AISServiceImpl implements AISService {
     public List<PassDTO> getPassOnsite() {
         
         List<PassDTO> onsite = new ArrayList<>(); 
+        Set<Integer> ids = new HashSet<>();
         
         for (Pritomnost p : aDochazkaService.getActualWorkers()) {
             
             UserInfoDTO user = new UserInfoDTO();
             user.setName(p.getUzivatelJmeno().getValue() + " " + gdpr(p.getUzivatelPrijmeni().getValue()));
             user.setCode(toInt(p.getUzivatelCislo().getValue()));
-            user.setId(user.getCode());
+            user.setId(user.getCode());            
             user.setDepartment(p.getOddeleniString().getValue());
 
+            ids.add(user.getId());
+            
             PassDTO pass = new PassDTO();
             pass.setDate(toOffsetDateTime(p.getPrichod().getValue()));
             pass.setCategory(toCategory(p.getCinnostNazev().getValue()));
@@ -161,7 +166,7 @@ public class AISServiceImpl implements AISService {
             onsite.add(pass);
         }
 
-        onsite.addAll(findAllLeaved());
+        onsite.addAll(findAllLeaved().stream().filter(u -> !ids.contains(u.getId())).collect(Collectors.toList()));
         
         Collections.sort(onsite, new Comparator<PassDTO>() {
 
@@ -184,11 +189,16 @@ public class AISServiceImpl implements AISService {
         
         List<PassDTO> found = new ArrayList<>();
         
-        for (Pristup p : aDochazkaService.getAccesses(today)) {
+        List<Pristup> accesses = aDochazkaService.getAccesses(today);
+        Collections.reverse(accesses);
+        Set<String> ids = new HashSet<>();
 
-            if (!p.getKlavesa1().isNil() && p.getKlavesa1().getValue() == 2) {
+        for (Pristup p : accesses) {
+
+            String id = p.getCisloUzivatele().getValue();            
+            if (!p.getKlavesa1().isNil() && p.getKlavesa1().getValue() == 2 && !ids.contains(id)) {
             
-                String id = p.getCisloUzivatele().getValue();            
+                ids.add(id);
                 Uzivatel u = users.get(id);
                 
                 UserInfoDTO user = new UserInfoDTO();
