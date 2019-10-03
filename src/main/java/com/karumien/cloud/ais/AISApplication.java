@@ -8,7 +8,9 @@ package com.karumien.cloud.ais;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 //import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
@@ -20,8 +22,10 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * @since 1.0, 15. 4. 2019 17:20:36
  */
 @SpringBootApplication
+@EnableCaching
 //@EnableDiscoveryClient
 @EnableSwagger2
+@EnableScheduling
 @ComponentScan(basePackages = { "com.karumien"})
 public class AISApplication {
     

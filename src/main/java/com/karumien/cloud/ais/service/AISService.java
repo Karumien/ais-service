@@ -142,7 +142,7 @@ public interface AISService {
      * 
      * @return {@link List} of {@link PassDTO} which is onsite
      */
-    List<ViewPass> getPassOnsite();
+    List<PassDTO> getPassOnsite();
 
     /**
      * Return work month for specified user

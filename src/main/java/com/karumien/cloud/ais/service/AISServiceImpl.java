@@ -18,6 +18,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.apache.poi.hssf.usermodel.HeaderFooter;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -48,6 +51,7 @@ import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -55,9 +59,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Objects;
+import com.karumien.client.adochazka.schemas.Oddeleni;
+import com.karumien.client.adochazka.schemas.Pristup;
+import com.karumien.client.adochazka.schemas.Pritomnost;
+import com.karumien.client.adochazka.schemas.Uzivatel;
+import com.karumien.client.adochazka.service.ADochazkaService;
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.entity.Work;
+import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkDTO;
 import com.karumien.cloud.ais.api.model.WorkDayDTO;
@@ -95,6 +105,9 @@ public class AISServiceImpl implements AISService {
     private UserInfoRepository userInfoRepository;
 
     @Autowired
+    private ADochazkaService aDochazkaService;
+
+    @Autowired
     private ModelMapper mapper;
 
     /** National Holidays */
@@ -102,6 +115,15 @@ public class AISServiceImpl implements AISService {
             LocalDate.of(2019, 5, 8), LocalDate.of(2019, 7, 5), LocalDate.of(2019, 10, 28), LocalDate.of(2019, 12, 24),
             LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26));
 
+    private static final Map<String, String> TRASLATES = new HashMap<>();
+    static {
+        TRASLATES.put("Prace", "V kanceláři");
+        TRASLATES.put("SluzebniCesta", "Služební cesta");
+        TRASLATES.put("Prestavka", "Přestávka/Oběd");
+        TRASLATES.put("Odchod", "Odchod z práce");
+        TRASLATES.put("Lekar", "Lékař");
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -117,8 +139,109 @@ public class AISServiceImpl implements AISService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<ViewPass> getPassOnsite() {
-        return passRepository.findAllOnsite();
+    @Cacheable(value = "online")
+    public List<PassDTO> getPassOnsite() {
+        
+        List<PassDTO> onsite = new ArrayList<>(); 
+        
+        for (Pritomnost p : aDochazkaService.getActualWorkers()) {
+            
+            UserInfoDTO user = new UserInfoDTO();
+            user.setName(p.getUzivatelJmeno().getValue() + " " + gdpr(p.getUzivatelPrijmeni().getValue()));
+            user.setCode(toInt(p.getUzivatelCislo().getValue()));
+            user.setId(user.getCode());
+            user.setDepartment(p.getOddeleniString().getValue());
+
+            PassDTO pass = new PassDTO();
+            pass.setDate(toOffsetDateTime(p.getPrichod().getValue()));
+            pass.setCategory(toCategory(p.getCinnostNazev().getValue()));
+            pass.setCategoryId(toCategoryId(p.getCinnostNazev().getValue()));
+            pass.setPerson(user);
+
+            onsite.add(pass);
+        }
+
+        onsite.addAll(findAllLeaved());
+        
+        Collections.sort(onsite, new Comparator<PassDTO>() {
+
+            @Override
+            public int compare(PassDTO o1, PassDTO o2) {
+                if (!o1.getCategoryId().equals(o2.getCategoryId())) {
+                    return o1.getCategoryId().compareTo(o2.getCategoryId());
+                }
+                return o1.getDate().compareTo(o2.getDate());
+            }
+            
+        });
+        return onsite;
+    }
+    
+    public List<PassDTO> findAllLeaved() {
+        
+        OffsetDateTime today = LocalDate.now().atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
+        Map<String, Uzivatel> users = aDochazkaService.getWorkersMap();
+        
+        List<PassDTO> found = new ArrayList<>();
+        
+        for (Pristup p : aDochazkaService.getAccesses(today)) {
+
+            if (!p.getKodPrace().isNil() && p.getKodPrace().getValue() == 2) {
+            
+                String id = p.getCisloUzivatele().getValue();            
+                Uzivatel u = users.get(id);
+                
+                UserInfoDTO user = new UserInfoDTO();
+                user.setName(u.getJmeno().getValue() + " " + gdpr(u.getPrijmeni().getValue()));
+                user.setCode(toInt(id));
+                user.setId(user.getCode());
+                
+                Oddeleni oddeleni = u.getOddeleni().getValue().getOddeleni().stream().findFirst().orElse(null); 
+                user.setDepartment(oddeleni != null ? oddeleni.getNazev().toString(): null);
+            
+                PassDTO pass = new PassDTO();
+                pass.setDate(toOffsetDateTime(p.getDatum()));
+                pass.setCategory(toCategory("Odchod"));
+                pass.setCategoryId(120);
+                pass.setPerson(user);
+    
+                found.add(pass);
+            }            
+        }
+        
+        return found;
+        
+    }
+
+    private static String gdpr(String value) {
+        return value == null ? null : value.substring(0, 1) + (value.contains("ö") ? "ö" : "") + ".";
+    }
+
+    private static String toCategory(String value) {
+        return TRASLATES.containsKey(value) ? TRASLATES.get(value) : value; 
+    }
+
+    private static Integer toCategoryId(String value) {
+        return "Prace".equals(value) ? 1 : 100;
+    }
+
+    private static Integer toInt(String value) {
+        try {
+            if (value != null) {
+                return Integer.valueOf(value);
+            }
+        } catch (Exception e) {
+        }
+        return null;
+    }
+
+    private static OffsetDateTime toOffsetDateTime(XMLGregorianCalendar xmlCalendar) {
+        if (xmlCalendar == null) {
+            return null;
+        }
+        
+        LocalDateTime local = xmlCalendar.toGregorianCalendar().toZonedDateTime().toLocalDateTime();
+        return local.atOffset(OffsetDateTime.now().getOffset());
     }
 
     /**
