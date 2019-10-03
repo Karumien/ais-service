@@ -196,7 +196,7 @@ public class AISServiceImpl implements AISService {
         for (Pristup p : accesses) {
 
             String id = p.getCisloUzivatele().getValue();            
-            if (!p.getKlavesa1().isNil() && p.getKlavesa1().getValue() == 2 && !ids.contains(id)) {
+            if (!p.getKlavesa1().isNil() && p.getKlavesa1().getValue() != 1 && !ids.contains(id)) {
             
                 ids.add(id);
                 Uzivatel u = users.get(id);
