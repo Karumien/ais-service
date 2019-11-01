@@ -19,6 +19,7 @@ import javax.validation.constraints.NotNull;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.data.domain.Page;
 
+import com.karumien.client.adochazka.schemas.Uzivatel;
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
 import com.karumien.cloud.ais.api.model.PassDTO;
@@ -41,7 +42,11 @@ public interface AISService {
     double HOURS_IN_DAY = 8d;
 
     default String hours(Double workedHours) {
-        if (workedHours == null) {
+        return hours(workedHours, true);
+    }
+    
+    default String hours(Double workedHours, boolean showZero) {
+        if (workedHours == null || !showZero && workedHours == 0) {
             return "";
         }
         return formatAsTime(workedHours);
@@ -204,6 +209,8 @@ public interface AISService {
     default boolean isWorkingType(WorkTypeDTO workType) {
         return workType == WorkTypeDTO.WORK || workType == WorkTypeDTO.SICKNESS || workType == WorkTypeDTO.TRIP;
     }
+
+    Uzivatel getUzivatel(String username);
 
 
 }

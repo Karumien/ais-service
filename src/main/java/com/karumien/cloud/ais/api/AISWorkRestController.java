@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.karumien.client.adochazka.schemas.Uzivatel;
 import com.karumien.cloud.ais.api.handler.WorkApi;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkDTO;
@@ -162,7 +163,7 @@ public class AISWorkRestController implements WorkApi {
 
         sb.append("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
                 (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
-        sb.append("<tr><td colspan=\"8\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
+        sb.append("<tr><td colspan=\"10\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
         
         List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
                 "červenec", "srpen", "září", "říjen", "listopad", "prosinec");
@@ -178,6 +179,8 @@ public class AISWorkRestController implements WorkApi {
             roleUser = selectedUser;
         }
 
+        Uzivatel uzivatel = aisService.getUzivatel(username);
+        
         sb.append("</td>");
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
                             
@@ -198,9 +201,12 @@ public class AISWorkRestController implements WorkApi {
         sb.append("<td class=\"i24_tableHead menuline\" align=\"right\">Datum</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Kategorie</td>"
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd od-do</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd/přest.</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem <span title=\"Schválit docházku ve vybraný den\">(?)</span></td><td class=\"i24_tableHead menuline\" align=\"right\">Saldo</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Služebně</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Nemoc</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"right\">Saldo</td>"
             + "<td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
 
@@ -210,8 +216,11 @@ public class AISWorkRestController implements WorkApi {
         //}
         sb.append("</td><td></td><td class=\"i24_tableHead menuline\">&nbsp; Poznámka (hodiny/zakázka)</td></tr></form>");
 
-        int countWorkDays = 0;
+        
         double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
+        double saldo = 0;
+        
+        
         WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
@@ -226,10 +235,14 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<td class=\"i24_tableItem\"><i>").append(aisService.date(workDay.getDate())).append("</i></td>");
             sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
-            sb.append("<td class=\"i24_tableItem\" align=\"center\">")
-                .append(hoursOnly(workDay.getLunchStart())).append(workDay.getLunchStart() != null ? " - " : "").append(hoursOnly(workDay.getLunchEnd())).append("</td>");
+           
+            if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
+              sb.append("<td class=\"i24_tableItem\" align=\"center\">")
+                .append(aisService.hours(workDay.getLunch())).append("</td>");
+            }
+            
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
-
+            
             String ro = " disabled=\"disabled\" ";
             if (Boolean.TRUE.equals(roleUser.isRoleHip()) || Boolean.TRUE.equals(roleUser.isRoleAdmin())) {
                 ro = "";
@@ -238,18 +251,32 @@ public class AISWorkRestController implements WorkApi {
             if (workDay.getDate().getDayOfWeek() != DayOfWeek.SATURDAY
                 && workDay.getDate().getDayOfWeek() != DayOfWeek.SUNDAY 
                 && workDay.getWorkDayType() != WorkDayTypeDTO.NATIONAL_HOLIDAY) {
-                
-                if (currentMonth && actualMonthDay.isAfter(workDay.getDate())) {
-                    countWorkDays ++;
-                }
-                
+                                
                 if (workDay.getWork() == null) {
                     continue;
                 }
+                                
+                if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
+                    
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
+                            aisService.hours(workDay.getTrip(), false)).append("</td>");
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
+                            aisService.hours(workDay.getSick(), false)).append("</td>");
+    
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b></td>");
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("<td>");
+                    
+                    saldo += workDay.getSaldo() != null ? workDay.getSaldo() : 0;
 
-                sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b> <input type=\"checkbox\" " + ro + " name=\"validated\" /></td>");
-                sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("<td>");
+                } else {
 
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
+    
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("<td>");
+                }
+                
                 sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"id\" value=\""+ work.getId() +"\">"
                         + "<input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" type=\"text\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours()) : "")
@@ -283,7 +310,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append("</tr>");
             
             if (workDay.getDate().getDayOfWeek() == DayOfWeek.SUNDAY && ! workDay.getDate().isEqual(workDay.getDate().with(TemporalAdjusters.lastDayOfMonth()))) {
-                sb.append("<tr><td colspan=\"11\"><hr/></td></tr>");
+                sb.append("<tr><td colspan=\"13\"><hr/></td></tr>");
             }
         }
         sb.append("</table>");
@@ -302,10 +329,11 @@ public class AISWorkRestController implements WorkApi {
         ).append("</b></td>");
         
 
-        sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i>").append("Aditus").append("</i></td>");        
-        sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(workMonthDTO.getSumOnSiteDays())).append("</b>" + 
-                (currentMonth ?  " / " + aisService.days(countWorkDays * fond) : "")
-          ).append("</b></td>");
+        if (uzivatel != null) {
+            sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Saldo k dnešnímu dni\">").append("ADocházka (?)").append("</i></td>");        
+            sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(workMonthDTO.getSumOnSiteDays())).append("</b> (" + 
+                    saldo( saldo )).append(")</td>");
+        }
         
         double worked = 0;
         
@@ -331,8 +359,11 @@ public class AISWorkRestController implements WorkApi {
             }
         }
 
-        sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
-        sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo((workMonthDTO.getSumOnSiteDays() - worked) * AISService.HOURS_IN_DAY)).append("</b></td>");
+        if (uzivatel != null) {
+            sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
+            sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo(workMonthDTO.getSumOnSiteDays() - worked * AISService.HOURS_IN_DAY)).append("</b></td>");
+        }
+
         sb2.append("</tr>");
         sb1.append(sb2);
         sb1.append("</tr></table>");
