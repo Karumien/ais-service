@@ -758,7 +758,7 @@ public class AISServiceImpl implements AISService {
 
         createSimpleRow(sheet, row++, styles.get(ExcelStyleType.H1), 
                 yearmonth, selectedUser.getName(),
-                null, null, null, null, null, "ev.č. " + selectedUser.getCode());               
+                null, null, null, null, "ev.č. " + selectedUser.getCode());               
         
         row++;
         createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TH), 
@@ -771,13 +771,13 @@ public class AISServiceImpl implements AISService {
             
             createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TD), styles.get(ExcelStyleType.TD_PRICE),    
                     date(workDay.getDate()), getDescription(workDay.getWorkDayType()), hoursOnly(workDay.getWorkStart()), 
-                    workDay.getLunch(), 
-                    hoursOnly(workDay.getWorkEnd()), workDay.getWorkedHours(),                     
-                    work != null ? work.getHours() : "", work != null ? getDescription(work.getWorkType()) : "");
+                    hours(workDay.getLunch()), 
+                    hoursOnly(workDay.getWorkEnd()), hours(workDay.getWorkedHours()),                     
+                    work != null ? hours(work.getHours()) : "", work != null ? getDescription(work.getWorkType()) : "");
 
             createSimpleRow(sheet, row++, styles.get(ExcelStyleType.VALUE), styles.get(ExcelStyleType.VALUE_PRICE),    
                     "", "", "", "", "", "", 
-                    work != null ? work.getHours2() : "", work != null ? getDescription(work.getWorkType2()) : "");
+                    work != null ? hours(work.getHours2()) : "", work != null ? getDescription(work.getWorkType2()) : "");
         }        
 
         row++;
@@ -813,11 +813,11 @@ public class AISServiceImpl implements AISService {
         rowCell = sheet.createRow(row++);
         cell = rowCell.createCell(index++, CellType.STRING);
         cell.setCellStyle(styles.get(ExcelStyleType.TD));
-        cell.setCellValue("Aditus");
+        cell.setCellValue("ADocházka");
         
         cell = rowCell.createCell(index++, CellType.NUMERIC);
         cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-        cell.setCellValue(workMonthDTO.getSumOnSiteDays() * HOURS_IN_DAY);
+        cell.setCellValue(workMonthDTO.getSumOnSiteDays());
         
         for (WorkDTO work : workMonthDTO.getSums()) {
             index = 0;

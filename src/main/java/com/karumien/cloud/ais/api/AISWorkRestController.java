@@ -161,9 +161,9 @@ public class AISWorkRestController implements WorkApi {
         + "        \"description\": \"' + form.description.value + '\" }');"
         + "  }}</script>");
 
-        sb.append("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
+        sb.append("<table cellspacing=\"5\" class=\"aditus\" border=\"0\"><form action=\""+ 
                 (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
-        sb.append("<tr><td colspan=\"8\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
+        sb.append("<tr><td colspan=\"6\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
         
         List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
                 "červenec", "srpen", "září", "říjen", "listopad", "prosinec");
@@ -199,7 +199,6 @@ public class AISWorkRestController implements WorkApi {
                 +username+"&role="+role+"&year="+year+"&month="+month + "\" method=\"post\">");
         sb.append("<tr>");
         sb.append("<td class=\"i24_tableHead menuline\" align=\"right\">Datum</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Kategorie</td>"
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd/přest.</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
@@ -207,7 +206,6 @@ public class AISWorkRestController implements WorkApi {
 //            + "<td class=\"i24_tableHead menuline\" align=\"right\">Nemoc</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"left\">Celkem</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Saldo</td>"
-            + "<td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
 
         //if (roleUser.isRoleAdmin()) {
@@ -233,7 +231,12 @@ public class AISWorkRestController implements WorkApi {
             }
             
             sb.append("<td class=\"i24_tableItem\"><i>").append(aisService.date(workDay.getDate())).append("</i></td>");
-            sb.append("<td class=\"i24_tableItem\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
+            
+            if (workDay.getWorkDayType() == WorkDayTypeDTO.NATIONAL_HOLIDAY) {                
+                sb.append("<td class=\"i24_tableItem\" colspan=\"8\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
+                continue;
+            }
+            
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
            
             if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
@@ -277,7 +280,7 @@ public class AISWorkRestController implements WorkApi {
                             "><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b>"
                             + (adv.length() > 0 ? "<span class=\"i24_tableHead menuline\"> (?)</span>" : "") 
                             + "</div></td>");
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("<td>");
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("</td>");
                     
                     saldo += workDay.getSaldo() != null ? workDay.getSaldo() : 0;
 
@@ -323,7 +326,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append("</tr>");
             
             if (workDay.getDate().getDayOfWeek() == DayOfWeek.SUNDAY && ! workDay.getDate().isEqual(workDay.getDate().with(TemporalAdjusters.lastDayOfMonth()))) {
-                sb.append("<tr><td colspan=\"11\"><hr/></td></tr>");
+                sb.append("<tr><td colspan=\"9\"><hr/></td></tr>");
             }
         }
         sb.append("</table>");
