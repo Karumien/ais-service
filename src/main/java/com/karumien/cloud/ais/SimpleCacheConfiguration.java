@@ -11,6 +11,6 @@ public class SimpleCacheConfiguration implements CacheManagerCustomizer<Concurre
 
     @Override
     public void customize(ConcurrentMapCacheManager cacheManager) {
-        cacheManager.setCacheNames(Arrays.asList("users", "online"));
+        cacheManager.setCacheNames(Arrays.asList("users", "online", "works"));
     }   
 }
