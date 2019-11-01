@@ -163,7 +163,7 @@ public class AISWorkRestController implements WorkApi {
 
         sb.append("<table cellspacing=\"5\" class=\"aditus\"><form action=\""+ 
                 (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">");
-        sb.append("<tr><td colspan=\"10\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
+        sb.append("<tr><td colspan=\"8\"><select name=\"month\" class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
         
         List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
                 "červenec", "srpen", "září", "říjen", "listopad", "prosinec");
@@ -203,9 +203,9 @@ public class AISWorkRestController implements WorkApi {
             + "<td class=\"i24_tableHead menuline\">Příchod</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"center\">Oběd/přest.</td>"
             + "<td class=\"i24_tableHead menuline\">Odchod</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Služebně</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Nemoc</td>"
-            + "<td class=\"i24_tableHead menuline\" align=\"right\">Celkem</td>"
+//            + "<td class=\"i24_tableHead menuline\" align=\"right\">Služebně</td>"
+//            + "<td class=\"i24_tableHead menuline\" align=\"right\">Nemoc</td>"
+            + "<td class=\"i24_tableHead menuline\" align=\"left\">Celkem</td>"
             + "<td class=\"i24_tableHead menuline\" align=\"right\">Saldo</td>"
             + "<td>&nbsp;</td>"
             + "<td class=\"i24_tableHead menuline\" style=\"text-align: right\">Výkazy (").append(username).append(")");
@@ -258,20 +258,33 @@ public class AISWorkRestController implements WorkApi {
                                 
                 if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
                     
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
-                            aisService.hours(workDay.getTrip(), false)).append("</td>");
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
-                            aisService.hours(workDay.getSick(), false)).append("</td>");
-    
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\"><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b></td>");
+//                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
+//                            aisService.hours(workDay.getTrip(), false)).append("</td>");
+//                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
+//                            aisService.hours(workDay.getSick(), false)).append("</td>");
+
+                    String adv = "";
+                    if (workDay.getTrip() != null && workDay.getTrip() > 0) {
+                        adv += "Služební cesta:  " + aisService.hours(workDay.getTrip(), false) + "\n";
+                    }
+                    if (workDay.getSick() != null && workDay.getSick() > 0) {
+                        adv += "Lékař/Nemoc :  " + aisService.hours(workDay.getSick(), false) + "\n";
+                    }
+                    
+                    
+                    sb.append("<td class=\"i24_tableItem\" align=\"left\"><div "
+                            + (adv.length() > 0 ? "title =\"" + adv + "\"" : "" ) + 
+                            "><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b>"
+                            + (adv.length() > 0 ? "<span class=\"i24_tableHead menuline\"> (?)</span>" : "") 
+                            + "</div></td>");
                     sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("<td>");
                     
                     saldo += workDay.getSaldo() != null ? workDay.getSaldo() : 0;
 
                 } else {
 
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
+//                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
+//                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
     
                     sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
                     sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("<td>");
@@ -310,7 +323,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append("</tr>");
             
             if (workDay.getDate().getDayOfWeek() == DayOfWeek.SUNDAY && ! workDay.getDate().isEqual(workDay.getDate().with(TemporalAdjusters.lastDayOfMonth()))) {
-                sb.append("<tr><td colspan=\"13\"><hr/></td></tr>");
+                sb.append("<tr><td colspan=\"11\"><hr/></td></tr>");
             }
         }
         sb.append("</table>");
