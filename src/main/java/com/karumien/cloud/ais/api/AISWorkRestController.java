@@ -239,9 +239,9 @@ public class AISWorkRestController implements WorkApi {
             
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkStart())).append("</b></td>");
            
-            if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
+            if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && isPast(actualMonthDay, workDay.getDate())) {
               sb.append("<td class=\"i24_tableItem\" align=\"center\">")
-                .append(aisService.hours(workDay.getLunch())).append("</td>");
+                .append(corrected(workDay.getLunch(), workDay.getOriginalLunch())).append("</td>");
             }
             
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
@@ -259,7 +259,7 @@ public class AISWorkRestController implements WorkApi {
                     continue;
                 }
                                 
-                if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && actualMonthDay.isAfter(workDay.getDate()) || actualMonthDay.equals(workDay.getDate())) {
+                if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && isPast(actualMonthDay, workDay.getDate())) {
                     
 //                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(
 //                            aisService.hours(workDay.getTrip(), false)).append("</td>");
@@ -280,10 +280,21 @@ public class AISWorkRestController implements WorkApi {
                             "><b>").append(aisService.hours(workDay.getWorkedHours())).append("</b>"
                             + (adv.length() > 0 ? "<span class=\"i24_tableHead menuline\"> (?)</span>" : "") 
                             + "</div></td>");
-                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(workDay.getSaldo()) : "").append("</td>");
                     
-                    saldo += workDay.getSaldo() != null ? workDay.getSaldo() : 0;
+                    double actualSaldo = workDay.getSaldo() != null ? workDay.getSaldo() : 0;
 
+                    // Holiday correction 
+                    if (work.getWorkType() == WorkTypeDTO.HOLIDAY) {
+                        actualSaldo += work.getHours() != null ? work.getHours() : 0;
+                    }
+                    if (work.getWorkType2() == WorkTypeDTO.HOLIDAY) {
+                        actualSaldo += work.getHours2() != null ? work.getHours2() : 0;
+                    }
+
+                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append(work != null ? saldo(actualSaldo) : "").append("</td>");
+                    
+                    saldo += actualSaldo;
+                    
                 } else {
 
 //                    sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
@@ -346,7 +357,7 @@ public class AISWorkRestController implements WorkApi {
         
 
         if (uzivatel != null) {
-            sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Saldo k dnešnímu dni\">").append("ADocházka (?)").append("</i></td>");        
+            sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Saldo ke konci včerejšího dne\">").append("ADocházka (?)").append("</i></td>");        
             sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(workMonthDTO.getSumOnSiteDays())).append("</b> (" + 
                     saldo( saldo )).append(")</td>");
         }
@@ -387,21 +398,34 @@ public class AISWorkRestController implements WorkApi {
         return sb.toString();
     }
     
+    private boolean isPast(LocalDate actualMonthDay, LocalDate date) {
+        return actualMonthDay.isAfter(date)|| actualMonthDay.equals(date);
+    }
+    
     private String saldo(Double value) {
         if (value == null) {
             return "";
         }
         
-        return "<span style=\"color:" + (value < 0 ? "#FF4136" : "#2ECC40") + "\">" + aisService.formatAsTime(value) + "</span>";
+        return "<span style=\"color:" + (value < -0.06 ? "#FF4136" : "#2ECC40") + "\">" + aisService.formatAsTime(value) + "</span>";
     }
 
     private String hoursOnly(@Valid WorkHourDTO work) {
         if (work == null || work.getDate() == null) {
             return "";
         }
-        return "<span style=\"color:" + (work.isCorrected() ? "#888888":"#000") +"\">" 
+        return "<span "+(work.isCorrected()? " title =\""+ aisService.hoursOriginalOnly(work) +"\"":"") +"style=\"color:" + (work.isCorrected() ? "#888888":"#000") +"\">" 
            + aisService.hoursOnly(work) + "</span>";
     }
+        
+    private String corrected(Double lunch, Double originalLunch) {
+        if (lunch == null) {
+            return "";
+        }
+        return "<span "+(originalLunch != null ? " title =\""+ aisService.hours(originalLunch) +"\"":"") +"style=\"color:" + (originalLunch != null  ? "#888888":"#000") +"\">" 
+                + aisService.hours(lunch) + "</span>";
+    }
+    
     
     private String getDescription(@Valid WorkDayTypeDTO workDayType) {
         switch (workDayType) {

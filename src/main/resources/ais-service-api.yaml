@@ -220,6 +220,9 @@ definitions:
   WorkHour:
     type: object
     properties:     
+      original:
+        type: string
+        format: date-time
       date:
         type: string
         format: date-time
@@ -245,6 +248,9 @@ definitions:
         type: number
         format: double
       lunch:
+        type: number
+        format: double
+      originalLunch:
         type: number
         format: double
       sick:

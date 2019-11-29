@@ -69,7 +69,7 @@ public interface AISService {
             return "0:00";
         }
         
-        boolean sign = daysInHours.doubleValue() < 0;
+        boolean sign = daysInHours.doubleValue() < -0.0167;
         
         double value = Math.abs(daysInHours.doubleValue());
         
@@ -92,6 +92,14 @@ public interface AISService {
         }
 
         return work.getDate().format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    default String hoursOriginalOnly(@Valid WorkHourDTO work) {
+        if (work == null || work.getOriginal() == null) {
+            return "";
+        }
+
+        return work.getOriginal().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     default String getDescription(@Valid WorkDayTypeDTO workDayType) {

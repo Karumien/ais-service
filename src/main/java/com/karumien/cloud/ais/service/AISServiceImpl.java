@@ -300,6 +300,8 @@ public class AISServiceImpl implements AISService {
                 
         for (int day = 1; day <= dateTo.getDayOfMonth(); day++) {
             
+          OffsetDateTime globalStart = OffsetDateTime.of(year, month, day, 6, 30, 0, 0, OffsetDateTime.now().getOffset());  
+            
           WorkDayDTO workDay = new WorkDayDTO();
           LocalDate date = LocalDate.of(year, month, day);
           workDay.setDate(date);
@@ -336,24 +338,54 @@ public class AISServiceImpl implements AISService {
               workDay.setWorkEnd(we);
 
               workDay.setSick(den.getCelkemLekar() + den.getCelkemNemoc() + den.getCelkemSickDay());
-              workDay.setTrip(den.getCelkemSluzebniCesta());
+              workDay.setTrip(den.getCelkemSluzebniCesta() != null ? den.getCelkemSluzebniCesta() : 0);
 
               workDay.setWorkedHours(den.getCelkemPrace() + workDay.getSick());              
               workDay.setSaldo(den.getBalanc());
+              
+              // today
+              if (LocalDate.now().equals(workDay.getDate())) {
+                  workDay.setSaldo(0d);
+              }              
+              
               workDay.setLunch(den.getCelkemPrestavka());
               
+              // correct lunch
+              if (workDay.getLunch() == null || workDay.getLunch() < 0.5) {
+                  workDay.setOriginalLunch(workDay.getLunch() != null ? workDay.getLunch() : 0);
+                  workDay.setLunch(0.5d);
+              }              
               
-              OffsetDateTime prichod = aDochazkaService.toOffsetDateTime(den.getPrichod().isNil() ? null : den.getPrichod().getValue());
+              OffsetDateTime prichod = aDochazkaService.toOffsetDateTime(den.getPrichod().isNil() ? 
+                      null : den.getPrichod().getValue());
               OffsetDateTime odchod = aDochazkaService.toOffsetDateTime(den.getOdchod().isNil() ? null : den.getOdchod().getValue());
+
+              if (prichod != null && prichod.isBefore(globalStart) 
+                  || workDay.getWorkStart() != null && workDay.getWorkStart().getDate() != null 
+                  && workDay.getWorkStart().getDate().isBefore(globalStart)) {
+                  prichod = globalStart;
+              }
               
               if (isDifferent(workDay.getWorkStart().getDate(), prichod)) {
+                  workDay.getWorkStart().setOriginal(workDay.getWorkStart().getDate());
                   workDay.getWorkStart().setDate(prichod);
                   workDay.getWorkStart().setCorrected(true);
               }
               
               if (isDifferent(workDay.getWorkEnd().getDate(), odchod)) {
+                  workDay.getWorkEnd().setOriginal(workDay.getWorkEnd().getDate());
                   workDay.getWorkEnd().setDate(odchod);
                   workDay.getWorkEnd().setCorrected(true);
+              }
+              
+              // fix last 
+              if (prichod != null && odchod == null) {// && workDay.getTrip().doubleValue() == 0 && workDay.getSick() == 0 ) {
+                  odchod = prichod.plusMinutes((long) (workDay.getLunch() * 60d)).plusHours(8);
+                  workDay.getWorkEnd().setOriginal(null);
+                  workDay.getWorkEnd().setDate(odchod);
+                  workDay.getWorkEnd().setCorrected(true);
+                  workDay.setSaldo(0d);
+                  workDay.setWorkedHours(8d);
               }
               
               sumWork += workDay.getWorkedHours();              
