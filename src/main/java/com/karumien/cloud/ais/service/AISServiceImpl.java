@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -128,8 +129,20 @@ public class AISServiceImpl implements AISService {
         TRASLATES.put("Prestavka", "Přestávka/Oběd");
         TRASLATES.put("Odchod", "Odchod z práce");
         TRASLATES.put("Lekar", "Lékař");
+        TRASLATES.put("OTISK_PRSTU", "Otisk");
+        TRASLATES.put("CIPOVA_KARTA", "Čip");
     }
-    
+
+    private static final Map<Integer, String> KEYBOARD = new HashMap<>();
+    static {
+        KEYBOARD.put(Integer.valueOf(0), "<neznámý>");
+        KEYBOARD.put(Integer.valueOf(1), "Příchod");
+        KEYBOARD.put(Integer.valueOf(2), "Odchod");
+        KEYBOARD.put(Integer.valueOf(3), "Přestávka/Oběd");
+        KEYBOARD.put(Integer.valueOf(4), "Služební cesta");
+        KEYBOARD.put(Integer.valueOf(5), "Lékař");
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -185,7 +198,53 @@ public class AISServiceImpl implements AISService {
         });
         return onsite;
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PassDTO> getAccesses(LocalDate day, String username) {        
+
+        OffsetDateTime today = day.atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
+
+        Uzivatel uzivatel = getUzivatel(username);
+        List<PassDTO> passes = new ArrayList<>();
+        
+        if (uzivatel == null || uzivatel.getId() == null) {
+            return passes;
+        }
+                
+        // FIXME: Performance - dayTo + typ cinnosti
+        List<Pristup> pristupy = aDochazkaService.getAccesses(today)
+            .stream().filter(p -> !p.getUzivatelId().isNil() && p.getUzivatelId().getValue().equals(uzivatel.getId()))
+            .filter(p -> p.getDatum().getYear() == day.getYear() && p.getDatum().getMonth() == day.getMonthValue() && p.getDatum().getDay() == day.getDayOfMonth())
+            .collect(Collectors.toList());
+        
+        for (Pristup pristup : pristupy) {
+            
+            UserInfoDTO user = new UserInfoDTO();
+            user.setName(uzivatel.getJmeno().getValue() + " " + gdpr(uzivatel.getPrijmeni().getValue()));
+            user.setCode(uzivatel.getId());
+            user.setId(user.getCode());
+            
+            Oddeleni oddeleni = uzivatel.getOddeleni().getValue().getOddeleni().stream().findFirst().orElse(null); 
+            user.setDepartment(oddeleni != null ? oddeleni.getNazev().getValue(): null);
+                        
+            PassDTO pass = new PassDTO();
+            pass.setId(pristup.getId());
+            pass.setDate(aDochazkaService.toOffsetDateTime(pristup.getDatum()));
+            
+            Integer klavesa = pristup.getKlavesa1().isNil() ? 0 : pristup.getKlavesa1().getValue();
+            pass.setCategoryId(klavesa);
+            pass.setCategory(KEYBOARD.get(klavesa));
+            pass.setPerson(user);
+            pass.setChip(TRASLATES.get(pristup.getTypVerifikace().toString()));
+            passes.add(pass);
+        }                    
+                    
+        return passes;
+    }
+        
     public List<PassDTO> findAllLeaved() {
         
         OffsetDateTime today = LocalDate.now().atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
@@ -884,25 +943,28 @@ public class AISServiceImpl implements AISService {
 
         // Svátky
         index = 0;
-        rowCell = sheet.createRow(row++);
-        cell = rowCell.createCell(index++, CellType.STRING);
-        cell.setCellStyle(styles.get(ExcelStyleType.TD));
-        cell.setCellValue("Svátky");
         
-        cell = rowCell.createCell(index++, CellType.NUMERIC);
-        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-        cell.setCellValue(workMonthDTO.getSumHolidays() * HOURS_IN_DAY);
-
+        if (workMonthDTO.getSumHolidays() != null && workMonthDTO.getSumHolidays() > 0) {
+            rowCell = sheet.createRow(row++);
+            cell = rowCell.createCell(index++, CellType.STRING);
+            cell.setCellStyle(styles.get(ExcelStyleType.TD));
+            cell.setCellValue("Svátky");
+            
+            cell = rowCell.createCell(index++, CellType.NUMERIC);
+            cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+            cell.setCellValue(workMonthDTO.getSumHolidays() * HOURS_IN_DAY);
+        }
+        
         // Aditus
-        index = 0;
-        rowCell = sheet.createRow(row++);
-        cell = rowCell.createCell(index++, CellType.STRING);
-        cell.setCellStyle(styles.get(ExcelStyleType.TD));
-        cell.setCellValue("ADocházka");
-        
-        cell = rowCell.createCell(index++, CellType.NUMERIC);
-        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-        cell.setCellValue(workMonthDTO.getSumOnSiteDays());
+//        index = 0;
+//        rowCell = sheet.createRow(row++);
+//        cell = rowCell.createCell(index++, CellType.STRING);
+//        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+//        cell.setCellValue("ADocházka");
+//        
+//        cell = rowCell.createCell(index++, CellType.NUMERIC);
+//        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+//        cell.setCellValue(workMonthDTO.getSumOnSiteDays());
         
         for (WorkDTO work : workMonthDTO.getSums()) {
             index = 0;

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -19,6 +20,7 @@ import javax.validation.constraints.NotNull;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.data.domain.Page;
 
+import com.karumien.client.adochazka.schemas.Pristup;
 import com.karumien.client.adochazka.schemas.Uzivatel;
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
@@ -219,6 +221,14 @@ public interface AISService {
     }
 
     Uzivatel getUzivatel(String username);
+    List<PassDTO> getAccesses(LocalDate day, String cisloUzivatele);
 
+    default String time(OffsetDateTime date) {
+        if (date == null) {
+            return "";
+        }
+
+        return date.format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
 
 }

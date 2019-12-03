@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.karumien.client.adochazka.schemas.Uzivatel;
 import com.karumien.cloud.ais.api.handler.WorkApi;
+import com.karumien.cloud.ais.api.model.PassDTO;
 import com.karumien.cloud.ais.api.model.UserInfoDTO;
 import com.karumien.cloud.ais.api.model.WorkDTO;
 import com.karumien.cloud.ais.api.model.WorkDayDTO;
@@ -52,7 +53,7 @@ public class AISWorkRestController implements WorkApi {
     private static final String APPLICATION_EXCEL_VALUE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     /** MediaType Application PDF */
-    private static final String APPLICATION_PDF_VALUE = "application/pdft";
+    private static final String APPLICATION_PDF_VALUE = "application/pdf";
     
     @Autowired
     private ModelMapper mapper;
@@ -153,14 +154,32 @@ public class AISWorkRestController implements WorkApi {
 
         Uzivatel uzivatel = aisService.getUzivatel(username);
         String baseUrl = (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") ;
-
         
-        if (day != null) {
+        if (day != null && uzivatel != null) {
             
             selectedMonthDay = LocalDate.of(year, month, day);
             StringBuilder sb = new StringBuilder("<b>" + aisService.date(selectedMonthDay) + "</b> " + selectedUser.getName());
             
+            List<PassDTO> accesses = aisService.getAccesses(selectedMonthDay, username);
+            sb.append("<table cellspacing=\"5\" class=\"aditus\" border=\"0\">");
+            sb.append("<tr><td class=\"i24_tableHead menuline\">ID</td>")
+              .append("<td class=\"i24_tableHead menuline\">Čas</td>")
+              .append("<td class=\"i24_tableHead menuline\">Typ</td>")
+              .append("<td class=\"i24_tableHead menuline\">Klávesa</td>")
+              .append("<td class=\"i24_tableHead menuline\">Činnost</td>")
+              .append("</tr>");
             
+            
+            for (PassDTO access : accesses) {
+                sb.append("<tr><td class=\"i24_tableItem\">").append(access.getId()).append("</td>");
+                sb.append("<td class=\"i24_tableItem\">").append(aisService.time(access.getDate())).append("</td>");
+                sb.append("<td class=\"i24_tableItem\">").append(access.getChip()).append("</td>");
+                sb.append("<td class=\"i24_tableItem\">").append(access.getCategoryId()).append("</td>");
+                sb.append("<td class=\"i24_tableItem\">").append(access.getCategory()).append("</td>");
+                sb.append("</tr>");
+            }
+            
+            sb.append("</table>");
             return sb.toString();
             
         }
@@ -411,10 +430,10 @@ public class AISWorkRestController implements WorkApi {
             }
         }
 
-        if (uzivatel != null) {
-            sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
-            sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo(workMonthDTO.getSumOnSiteDays() - worked * AISService.HOURS_IN_DAY)).append("</b></td>");
-        }
+//        if (uzivatel != null) {
+//            sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
+//            sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo(workMonthDTO.getSumOnSiteDays() - worked * AISService.HOURS_IN_DAY)).append("</b></td>");
+//        }
 
         sb2.append("</tr>");
         sb1.append(sb2);
