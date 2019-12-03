@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +58,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Objects;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.karumien.client.adochazka.schemas.CustomerDataDen;
 import com.karumien.client.adochazka.schemas.Oddeleni;
 import com.karumien.client.adochazka.schemas.Pristup;
@@ -329,12 +337,17 @@ public class AISServiceImpl implements AISService {
 
           if (den != null && workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY) {
           
+              OffsetDateTime skutecnyPrichod = aDochazkaService.toOffsetDateTime(den.getSkutecnyPrichod().isNil() ? 
+                      null : den.getSkutecnyPrichod().getValue());
+              OffsetDateTime skutecnyOdchod = aDochazkaService.toOffsetDateTime(den.getSkutecnyOdchod().isNil() ? 
+                      null : den.getSkutecnyOdchod().getValue());
+              
               WorkHourDTO ws = new WorkHourDTO();
-              ws.setDate(aDochazkaService.toOffsetDateTime(den.getSkutecnyPrichod().isNil() ? null : den.getSkutecnyPrichod().getValue()));
+              ws.setDate(skutecnyPrichod);
               workDay.setWorkStart(ws);
               
               WorkHourDTO we = new WorkHourDTO();
-              we.setDate(aDochazkaService.toOffsetDateTime(den.getSkutecnyOdchod().isNil() ? null : den.getSkutecnyOdchod().getValue()));
+              we.setDate(skutecnyOdchod);
               workDay.setWorkEnd(we);
 
               workDay.setSick(den.getCelkemLekar() + den.getCelkemNemoc() + den.getCelkemSickDay());
@@ -359,7 +372,7 @@ public class AISServiceImpl implements AISService {
               OffsetDateTime prichod = aDochazkaService.toOffsetDateTime(den.getPrichod().isNil() ? 
                       null : den.getPrichod().getValue());
               OffsetDateTime odchod = aDochazkaService.toOffsetDateTime(den.getOdchod().isNil() ? null : den.getOdchod().getValue());
-
+                            
               if (prichod != null && prichod.isBefore(globalStart) 
                   || workDay.getWorkStart() != null && workDay.getWorkStart().getDate() != null 
                   && workDay.getWorkStart().getDate().isBefore(globalStart)) {
@@ -379,9 +392,9 @@ public class AISServiceImpl implements AISService {
               }
               
               // fix last 
-              if (prichod != null && odchod == null) {// && workDay.getTrip().doubleValue() == 0 && workDay.getSick() == 0 ) {
+              if (prichod != null && skutecnyOdchod == null) {// && workDay.getTrip().doubleValue() == 0 && workDay.getSick() == 0 ) {
+                  workDay.getWorkEnd().setOriginal(odchod);
                   odchod = prichod.plusMinutes((long) (workDay.getLunch() * 60d)).plusHours(8);
-                  workDay.getWorkEnd().setOriginal(null);
                   workDay.getWorkEnd().setDate(odchod);
                   workDay.getWorkEnd().setCorrected(true);
                   workDay.setSaldo(0d);
@@ -758,6 +771,46 @@ public class AISServiceImpl implements AISService {
                 .orElseThrow(() -> new NoDataFoundException("NO.USER", "No User for USERNAME = " + username));   
     }
         
+
+    public void toPdf(XSSFWorkbook my_xls_workbook, OutputStream out) throws DocumentException {
+      
+        XSSFSheet my_worksheet = my_xls_workbook.getSheetAt(0); 
+        // To iterate over the rows
+        Iterator<Row> rowIterator = my_worksheet.iterator();
+        //We will create output PDF document objects at this point
+        Document iText_xls_2_pdf = new Document();
+        PdfWriter.getInstance(iText_xls_2_pdf, out);
+        iText_xls_2_pdf.open();
+        //we have two columns in the Excel sheet, so we create a PDF table with two columns
+        //Note: There are ways to make this dynamic in nature, if you want to.
+        PdfPTable my_table = new PdfPTable(2);
+        //We will use the object below to dynamically add new data to the table
+        PdfPCell table_cell;
+        //Loop through rows.
+        while(rowIterator.hasNext()) {
+                Row row = rowIterator.next(); 
+                Iterator<Cell> cellIterator = row.cellIterator();
+                        while(cellIterator.hasNext()) {
+                                Cell cell = cellIterator.next(); //Fetch CELL
+                                switch(cell.getCellType()) { //Identify CELL type
+                                        //you need to add more code here based on
+                                        //your requirement / transformations
+                                case Cell.CELL_TYPE_STRING:
+                                        //Push the data from Excel to PDF Cell
+                                         table_cell=new PdfPCell(new Phrase(cell.getStringCellValue()));
+                                         //feel free to move the code below to suit to your needs
+                                         my_table.addCell(table_cell);
+                                        break;
+                                }
+                                //next line
+                        }
+    
+        }
+        //Finally add the table to PDF document
+        iText_xls_2_pdf.add(my_table);                       
+        iText_xls_2_pdf.close();                
+    }    
+    
     /**
      * {@inheritDoc}
      */
@@ -864,6 +917,30 @@ public class AISServiceImpl implements AISService {
         }
         
 
+        rowCell = sheet.createRow(row++);
+        rowCell = sheet.createRow(row++);
+
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(0, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Uzavřeno dne:");
+
+        cell = rowCell.createCell(5, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Schváleno dne:");
+
+        rowCell = sheet.createRow(row++);
+
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(0, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Podpis zaměstnance:");
+
+        cell = rowCell.createCell(5, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD));
+        cell.setCellValue("Podpis vedoucího:");
+        
+        
         sheet.createFreezePane(2, 3);
         sheet.setRepeatingRows(CellRangeAddress.valueOf("A1:H3"));
 
@@ -872,6 +949,10 @@ public class AISServiceImpl implements AISService {
         
         if (out != null) {
             workbook.write(out);
+//            try {
+//                toPdf(workbook, out);
+//            } catch (DocumentException e) {
+//            }
         }
         
         return workbook;    

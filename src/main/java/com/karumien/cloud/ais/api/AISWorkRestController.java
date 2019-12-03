@@ -51,6 +51,8 @@ public class AISWorkRestController implements WorkApi {
     /** MediaType Application Excel Openformat */
     private static final String APPLICATION_EXCEL_VALUE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+    /** MediaType Application PDF */
+    private static final String APPLICATION_PDF_VALUE = "application/pdft";
     
     @Autowired
     private ModelMapper mapper;
@@ -78,7 +80,6 @@ public class AISWorkRestController implements WorkApi {
     public ResponseEntity<List<UserInfoDTO>> getWorkUsers(@Valid String username) {
         return new ResponseEntity<>(aisService.getWorkUsers(username), HttpStatus.OK);
     }
-    
 
     /**
      * GET /work/export/xls : Generate export workdays
@@ -108,10 +109,12 @@ public class AISWorkRestController implements WorkApi {
         }        
 
         String yearmonth = year + "." + (month < 10 ? "0" : "") + month;
-        response.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + yearmonth + "-" + username + ".xlsx");
+        response.setHeader(CONTENT_DISPOSITION, ATTACHMENT_FILENAME + yearmonth + "-" + username +  
+              ".xlsx");
+                //".pdf"); 
         aisService.exportWorkDays(year, month, username, response.getOutputStream());
     }
-
+    
     /**
      * HTML formated Users on site.
      * 
@@ -123,7 +126,8 @@ public class AISWorkRestController implements WorkApi {
     public String getUserMonthHTML(@NotNull @Valid @RequestParam(value = "role", required = true) String role,
             @Valid @RequestParam(value = "username", required = false) String username,
             @Valid @RequestParam(value = "month", required = false) Integer month, 
-            @Valid @RequestParam(value = "year", required = false) Integer year) {
+            @Valid @RequestParam(value = "year", required = false) Integer year,
+            @Valid @RequestParam(value = "day", required = false) Integer day) {
         
         if (year == null) {
             year = LocalDate.now().getYear();
@@ -140,6 +144,26 @@ public class AISWorkRestController implements WorkApi {
         LocalDate actualMonthDay = LocalDate.now();
         LocalDate selectedMonthDay = LocalDate.of(year, month, 1);
         boolean currentMonth = (actualMonthDay.getYear() == year && actualMonthDay.getMonthValue() == month);
+
+        UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
+        UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
+        if (roleUser == null) {
+            roleUser = selectedUser;
+        }
+
+        Uzivatel uzivatel = aisService.getUzivatel(username);
+        String baseUrl = (Boolean.TRUE.equals(redirect) ? "" : "http://192.168.2.222:2222") ;
+
+        
+        if (day != null) {
+            
+            selectedMonthDay = LocalDate.of(year, month, day);
+            StringBuilder sb = new StringBuilder("<b>" + aisService.date(selectedMonthDay) + "</b> " + selectedUser.getName());
+            
+            
+            return sb.toString();
+            
+        }
 
         StringBuilder sb = new StringBuilder("<script type=\"text/javascript\">"
         + "function updateWork(form, username) {"
@@ -173,13 +197,6 @@ public class AISWorkRestController implements WorkApi {
         }
         sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">");
         
-        UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
-        UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
-        if (roleUser == null) {
-            roleUser = selectedUser;
-        }
-
-        Uzivatel uzivatel = aisService.getUzivatel(username);
         
         sb.append("</td>");
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
@@ -230,7 +247,15 @@ public class AISWorkRestController implements WorkApi {
                 sb.append("<form name=\"form"+ work.getId() +"\">");
             }
             
-            sb.append("<td class=\"i24_tableItem\"><i>").append(aisService.date(workDay.getDate())).append("</i></td>");
+            String link = "";
+            String linkEnd = "";
+            
+            if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY && isPast(actualMonthDay, workDay.getDate())) {
+                link = "<a href=\""+ baseUrl + "/api/work/html?month=" + month + "&year=" + year + "&day=" + workDay.getDate().getDayOfMonth() + "&role=" + role + "&username=" + username + "\" target=\"workday\">";
+                linkEnd = "</a>";
+            }
+            
+            sb.append("<td class=\"i24_tableItem\"><i>" + link).append(aisService.date(workDay.getDate())).append("</i>" + linkEnd + "</td>");
             
             if (workDay.getWorkDayType() == WorkDayTypeDTO.NATIONAL_HOLIDAY) {                
                 sb.append("<td class=\"i24_tableItem\" colspan=\"8\">").append(getDescription(workDay.getWorkDayType())).append("</td>");
@@ -407,7 +432,11 @@ public class AISWorkRestController implements WorkApi {
             return "";
         }
         
-        return "<span style=\"color:" + (value < -0.06 ? "#FF4136" : "#2ECC40") + "\">" + aisService.formatAsTime(value) + "</span>";
+        String time = aisService.formatAsTime(value);
+        if ("-0:00".equals(time)) {
+            time = "0:00";
+        }
+        return "<span style=\"color:" + (time.startsWith("-") ? "#FF4136" : "#2ECC40") + "\">" + time + "</span>";
     }
 
     private String hoursOnly(@Valid WorkHourDTO work) {

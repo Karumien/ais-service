@@ -69,7 +69,7 @@ public interface AISService {
             return "0:00";
         }
         
-        boolean sign = daysInHours.doubleValue() < -0.0167;
+        boolean sign = daysInHours.doubleValue() < 0;
         
         double value = Math.abs(daysInHours.doubleValue());
         
