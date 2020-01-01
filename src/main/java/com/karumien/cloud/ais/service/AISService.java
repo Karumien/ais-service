@@ -20,7 +20,6 @@ import javax.validation.constraints.NotNull;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.data.domain.Page;
 
-import com.karumien.client.adochazka.schemas.Pristup;
 import com.karumien.client.adochazka.schemas.Uzivatel;
 import com.karumien.cloud.ais.api.entity.UserInfo;
 import com.karumien.cloud.ais.api.entity.ViewPass;
@@ -123,6 +122,8 @@ public interface AISService {
             return "Služební cesta";
         case HOLIDAY:
             return "Dovolená";
+        case PAID_LEAVE:
+            return "Placené volno";
         case SICKDAY:
             return "Nemocné dny";
         case SICKNESS:

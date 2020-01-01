@@ -51,9 +51,6 @@ public class AISWorkRestController implements WorkApi {
 
     /** MediaType Application Excel Openformat */
     private static final String APPLICATION_EXCEL_VALUE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-    /** MediaType Application PDF */
-    private static final String APPLICATION_PDF_VALUE = "application/pdf";
     
     @Autowired
     private ModelMapper mapper;
@@ -141,11 +138,26 @@ public class AISWorkRestController implements WorkApi {
         if (username == null) {
             username = role;
         }        
+        
+        if (month < 4) {
+            year = LocalDate.now().getYear();
+        } 
+        
+        if (month > 3) {
+            year = LocalDate.now().getYear()-1;
+        } 
 
         LocalDate actualMonthDay = LocalDate.now();
+        LocalDate previousMonthDay = LocalDate.now().withDayOfMonth(1).minusMonths(1);
+        
         LocalDate selectedMonthDay = LocalDate.of(year, month, 1);
         boolean currentMonth = (actualMonthDay.getYear() == year && actualMonthDay.getMonthValue() == month);
+        boolean previousMonth = (previousMonthDay.getYear() == year && previousMonthDay.getMonthValue() == month);
 
+        
+        boolean readonly = ! ( currentMonth || previousMonth );
+
+        
         UserInfoDTO selectedUser = mapper.map(aisService.getUser(username), UserInfoDTO.class);
         UserInfoDTO roleUser = mapper.map(aisService.getUser(role), UserInfoDTO.class);
         if (roleUser == null) {
@@ -210,12 +222,18 @@ public class AISWorkRestController implements WorkApi {
         
         List<String> months = Arrays.asList("leden", "únor", "březen", "duben", "květen", "červen", 
                 "červenec", "srpen", "září", "říjen", "listopad", "prosinec");
-        for (int i = 4; i < 12; i++) {
+
+        for (int i = 0; i < 12; i++) {
             sb.append("<option value=\"").append(i+1).append("\"").append(month.equals(i+1) ? " selected" : "");
             sb.append(">").append(months.get(i)).append("</option>");
         }
-        sb.append("</select><select class=\"unvisiblelines\"><option selected>2019</select><input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">");
-        
+        sb.append("</select><select class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
+        for (int i = 2019; i <= LocalDate.now().getYear() ;i++) {
+            sb.append("<option" + (LocalDate.now().getYear() == year ? " selected" : "") + ">"+ i + "</option>");
+        }
+        sb.append("</select>");
+        sb.append("<input type=\"hidden\" name=\"year\" value=\"").append(year).append("\">");
+        sb.append("<input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">");        
         
         sb.append("</td>");
         sb.append("<td align=\"right\"><select class=\"unvisiblelines\" name=\"username\" onchange=\"this.form.submit()\">");
@@ -224,9 +242,9 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<option value=\"").append(user.getUsername()).append("\"").append(username.equals(user.getUsername()) ? " selected" : "");
             sb.append(">").append(user.getName()).append("</option>");            
         }
-        
+                
         sb.append("</select></td><td></td><td align=\"right\">");
-        if ((Boolean.TRUE.equals(roleUser.isRoleAdmin()) || Boolean.TRUE.equals(roleUser.isRoleHip())) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay)) {
+        if (!readonly && ((Boolean.TRUE.equals(roleUser.isRoleAdmin()) || Boolean.TRUE.equals(roleUser.isRoleHip())) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay))) {
             sb.append("<a href=\"#\" class=\"buttonSubmit\" title=\"Schválit vybraný měsíc dané osobě\">&nbsp; Schválit</a>");
         }
         sb.append("&nbsp;<a href=\"/works.do?action=list&object=native_works&clear=1\" target=\"_parent\" class=\"buttonSubmit\">&nbsp; Výkazy zakázky</a></td></tr></form>");                
@@ -250,11 +268,9 @@ public class AISWorkRestController implements WorkApi {
         //}
         sb.append("</td><td></td><td class=\"i24_tableHead menuline\">&nbsp; Poznámka (hodiny/zakázka)</td></tr></form>");
 
-        
         double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
         double saldo = 0;
-        
-        
+                
         WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
             
@@ -289,12 +305,7 @@ public class AISWorkRestController implements WorkApi {
             }
             
             sb.append("<td class=\"i24_tableItem\"><b>").append(hoursOnly(workDay.getWorkEnd())).append("</b></td>");
-            
-            String ro = " disabled=\"disabled\" ";
-            if (Boolean.TRUE.equals(roleUser.isRoleHip()) || Boolean.TRUE.equals(roleUser.isRoleAdmin())) {
-                ro = "";
-            }
-            
+                        
             if (workDay.getDate().getDayOfWeek() != DayOfWeek.SATURDAY
                 && workDay.getDate().getDayOfWeek() != DayOfWeek.SUNDAY 
                 && workDay.getWorkDayType() != WorkDayTypeDTO.NATIONAL_HOLIDAY) {
@@ -317,7 +328,9 @@ public class AISWorkRestController implements WorkApi {
                     if (workDay.getSick() != null && workDay.getSick() > 0) {
                         adv += "Lékař/Nemoc :  " + aisService.hours(workDay.getSick(), false) + "\n";
                     }
-                    
+                    if (workDay.getPayed() != null && workDay.getPayed() > 0) {
+                        adv += "Placené volno :  " + aisService.hours(workDay.getPayed(), false) + "\n";
+                    }
                     
                     sb.append("<td class=\"i24_tableItem\" align=\"left\"><div "
                             + (adv.length() > 0 ? "title =\"" + adv + "\"" : "" ) + 
@@ -328,10 +341,10 @@ public class AISWorkRestController implements WorkApi {
                     double actualSaldo = workDay.getSaldo() != null ? workDay.getSaldo() : 0;
 
                     // Holiday correction 
-                    if (work.getWorkType() == WorkTypeDTO.HOLIDAY) {
+                    if (work.getWorkType() == WorkTypeDTO.HOLIDAY || work.getWorkType() == WorkTypeDTO.PAID_LEAVE) {
                         actualSaldo += work.getHours() != null ? work.getHours() : 0;
                     }
-                    if (work.getWorkType2() == WorkTypeDTO.HOLIDAY) {
+                    if (work.getWorkType2() == WorkTypeDTO.HOLIDAY || work.getWorkType2() == WorkTypeDTO.PAID_LEAVE) {
                         actualSaldo += work.getHours2() != null ? work.getHours2() : 0;
                     }
 
@@ -347,31 +360,48 @@ public class AISWorkRestController implements WorkApi {
                     sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("</td>");
                     sb.append("<td class=\"i24_tableItem\" align=\"right\">").append("<td>");
                 }
+
                 
-                sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"id\" value=\""+ work.getId() +"\">"
-                        + "<input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" type=\"text\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
-                    .append(work != null ? aisService.hours(work.getHours()) : "")
-                    .append("\"><select class=\"unvisiblelines\" name=\"workType\" onChange=\"updateWork(this.form, '"+username+"')\">");
-                for (WorkTypeDTO type: WorkTypeDTO.values()) {
-                    sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType() == type ? " selected" : "");
-                    sb.append(">").append(aisService.getDescription(type)).append("</option>");
-                }
-                sb.append("</select></td>");
-
-                sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" name=\"hours2\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                if (readonly) {                        
+                    sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" readonly=\"readonly\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
+                        .append(work != null ? aisService.hours(work.getHours()) : "")
+                        .append("\"><input class=\"unvisiblelines\" name=\"workType\" readonly=\"readonly\" value=\"" + (work.getWorkType() != null ? aisService.getDescription(work.getWorkType()) : "") + "\">");
+                    sb.append("</td>");
+                    
+                    sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" type=\"text\" readonly=\"readonly\" name=\"hours2\" style=\"width: 35px; margin-left:10px\" value=\"")
                     .append(work != null ? aisService.hours(work.getHours2()) : "")
-                    .append("\"><select class=\"unvisiblelines\" name=\"workType2\" onChange=\"updateWork(this.form, '"+username+"')\">");
-                for (WorkTypeDTO type: WorkTypeDTO.values()) {
-                    sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType2() == type ? " selected" : "");
-                    sb.append(">").append(aisService.getDescription(type)).append("</option>");
-                }
-                sb.append("</select></td>");
-
-                sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"originalDescription\" value=\"")
-                    .append(work != null && work.getDescription() != null ? work.getDescription() : "")
-                    .append("\"><input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" name=\"description\" type=\"text\" style=\"width: 350px; margin-left:10px\" value=\"")
+                    .append("\"><input class=\"unvisiblelines\" name=\"workType\" readonly=\"readonly\" value=\"" + (work.getWorkType() != null ? aisService.getDescription(work.getWorkType2()) : "") + "\">");
+                    sb.append("</td>");
+                    
+                    sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" name=\"description\" type=\"text\" readonly=\"readonly\" style=\"width: 350px; margin-left:10px\" value=\"")
                     .append(work != null && work.getDescription() != null ? work.getDescription() : "")
                     .append("\"></td>");
+                } else {
+                    sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"id\" value=\""+ work.getId() +"\">"
+                            + "<input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" type=\"text\" name=\"hours\" style=\"width: 35px; margin-left:10px\" value=\"")
+                        .append(work != null ? aisService.hours(work.getHours()) : "")
+                        .append("\"><select class=\"unvisiblelines\" name=\"workType\" onChange=\"updateWork(this.form, '"+username+"')\">");
+                    for (WorkTypeDTO type: WorkTypeDTO.values()) {
+                        sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType() == type ? " selected" : "");
+                        sb.append(">").append(aisService.getDescription(type)).append("</option>");
+                    }
+                    sb.append("</select></td>");
+                    
+                    sb.append("<td class=\"i24_tableItem\"><input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" name=\"hours2\" type=\"text\" style=\"width: 35px; margin-left:10px\" value=\"")
+                    .append(work != null ? aisService.hours(work.getHours2()) : "")
+                    .append("\"><select class=\"unvisiblelines\" name=\"workType2\" onChange=\"updateWork(this.form, '"+username+"')\">");
+                    for (WorkTypeDTO type: WorkTypeDTO.values()) {
+                        sb.append("<option value=\"").append(type.name()).append("\"").append(work != null && work.getWorkType2() == type ? " selected" : "");
+                        sb.append(">").append(aisService.getDescription(type)).append("</option>");
+                    }
+                    sb.append("</select></td>");
+                    
+                    sb.append("<td class=\"i24_tableItem\"><input type=\"hidden\" name=\"originalDescription\" value=\"")
+                        .append(work != null && work.getDescription() != null ? work.getDescription() : "")
+                        .append("\"><input class=\"unvisiblelines\" onChange=\"updateWork(this.form, '"+username+"')\" name=\"description\" type=\"text\" style=\"width: 350px; margin-left:10px\" value=\"")
+                        .append(work != null && work.getDescription() != null ? work.getDescription() : "")
+                        .append("\"></td>");
+                }
             }
                         
             if (work != null) {
@@ -435,8 +465,22 @@ public class AISWorkRestController implements WorkApi {
 //            sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo(workMonthDTO.getSumOnSiteDays() - worked * AISService.HOURS_IN_DAY)).append("</b></td>");
 //        }
 
+        if (!readonly) {
+        sb2.append("<td><form action=\""+ (Boolean.TRUE.equals(redirect) ? "/api/work/html" : "/ais.jsp" ) + "\" method=\"get\">")
+           .append("<input type=\"hidden\" name=\"year\" value=\"").append(year).append("\">")
+           .append("<input type=\"hidden\" name=\"role\" value=\"").append(role).append("\">")        
+           .append("<input type=\"hidden\" name=\"month\" value=\"").append(month).append("\">")        
+           .append("<input type=\"hidden\" name=\"username\" value=\"").append(username).append("\">")
+           .append("<input type=\"submit\" class=\"buttonSubmit\" value=\"&nbsp; Přepočítat\"/></form></td>");
+        }
+        
         sb2.append("</tr>");
         sb1.append(sb2);
+        
+        if (!readonly) { 
+            sb1.append("<td></td>");
+        }
+        
         sb1.append("</tr></table>");
         sb.append(sb1);
         return sb.toString();

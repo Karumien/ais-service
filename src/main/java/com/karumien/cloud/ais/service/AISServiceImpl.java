@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -50,6 +49,7 @@ import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetProtection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -129,6 +129,8 @@ public class AISServiceImpl implements AISService {
         TRASLATES.put("Prestavka", "Přestávka/Oběd");
         TRASLATES.put("Odchod", "Odchod z práce");
         TRASLATES.put("Lekar", "Lékař");
+        TRASLATES.put("Pohreb", "Pohřeb");
+        TRASLATES.put("Svatba", "Svatba");
         TRASLATES.put("OTISK_PRSTU", "Otisk");
         TRASLATES.put("CIPOVA_KARTA", "Čip");
     }
@@ -411,6 +413,9 @@ public class AISServiceImpl implements AISService {
 
               workDay.setSick(den.getCelkemLekar() + den.getCelkemNemoc() + den.getCelkemSickDay());
               workDay.setTrip(den.getCelkemSluzebniCesta() != null ? den.getCelkemSluzebniCesta() : 0);
+              workDay.setPayed(
+                  (den.getCelkemSvatba() != null ? den.getCelkemSvatba() : 0) +
+                  (den.getCelkemPohreb() != null ? den.getCelkemPohreb() : 0));
 
               workDay.setWorkedHours(den.getCelkemPrace() + workDay.getSick());              
               workDay.setSaldo(den.getBalanc());
@@ -447,11 +452,11 @@ public class AISServiceImpl implements AISService {
               if (isDifferent(workDay.getWorkEnd().getDate(), odchod)) {
                   workDay.getWorkEnd().setOriginal(workDay.getWorkEnd().getDate());
                   workDay.getWorkEnd().setDate(odchod);
-                  workDay.getWorkEnd().setCorrected(true);
+                  workDay.getWorkEnd().setCorrected(odchod == null);
               }
               
               // fix last 
-              if (prichod != null && skutecnyOdchod == null) {// && workDay.getTrip().doubleValue() == 0 && workDay.getSick() == 0 ) {
+              if (prichod != null && skutecnyOdchod == null && (workDay.getTrip().doubleValue() > 0 || workDay.getSick() > 0)) {
                   workDay.getWorkEnd().setOriginal(odchod);
                   odchod = prichod.plusMinutes((long) (workDay.getLunch() * 60d)).plusHours(8);
                   workDay.getWorkEnd().setDate(odchod);
@@ -501,204 +506,7 @@ public class AISServiceImpl implements AISService {
           workMonth.setSums(new ArrayList<>(sums.values()));
           
         }
-//
-//            final int daySelected = day;
-//            LocalDate date = LocalDate.of(year, month, day);
-//
-//            WorkDayDTO workDay = new WorkDayDTO();
-//            workDay.setDate(date);
-//            Work worked = works.stream().filter(w -> w.getDate().equals(date)).findFirst().orElse(null);
-//            if (worked != null) {
-//                workDay.setWork(mapper.map(worked, WorkDTO.class));
-//            }
-//            workDay.setWorkDayType(getWorkDayType(date));
-//
-//            List<ViewPass> passDays = pass.stream().filter(p -> p.getDay().equals(daySelected))
-//                    .collect(Collectors.toList());
-//
-//            if (workDay.getWorkDayType() == WorkDayTypeDTO.NATIONAL_HOLIDAY) {
-//                sumHolidays++;
-//            }
-//
-//            if (workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY) {
-//                sumWorkDays++;
-//                if (generateWorks) {
-//                    Work work = new Work();
-//                    work.setUsername(username);
-//                    work.setDate(date);
-//                    work.setHours(AISService.HOURS_IN_DAY);
-//                    work.setWorkDayType(WorkDayTypeDTO.WORKDAY);
-//                    work.setWorkType(WorkTypeDTO.WORK);
-//                    workRepository.save(work);
-//                    works.add(work);
-//                }
-//            }
-//
-//            ViewPass workStart = null;
-//            ViewPass lunchStart = null;
-//            ViewPass lunchEnd = null;
-//            ViewPass workEnd = null;
-//
-//            ViewPass lastIn = null;
-//            long workedMinutes = 0;
-//
-//            for (ViewPass passDay : passDays) {
-//
-//                // come in or come to trip
-//                if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && lastIn == null) {
-//                    lastIn = passDay;
-//                } else {
-//                    if (lastIn != null && passDay.getCategoryId() != 1 && passDay.getCategoryId() != 3) {
-//                        workedMinutes += lastIn.getDate().until(passDay.getDate(), ChronoUnit.MINUTES);
-//                        lastIn = null;
-//                    }
-//                }
-//
-//                // come from lunch
-//                if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && lunchStart != null
-//                        && lunchEnd == null) {
-//                    lunchEnd = passDay;
-//                }
-//
-//                // come in first to work
-//                if ((passDay.getCategoryId() == 1 || passDay.getCategoryId() == 3) && workStart == null) {
-//                    workStart = passDay;
-//                }
-//
-//                // lunch
-//                if (passDay.getCategoryId() == 7 && lunchStart == null) {
-//                    lunchStart = passDay;
-//                }
-//                // get out from work
-//                if (passDay.getCategoryId() == 2 && workStart != null) {
-//                    workEnd = passDay;
-//                }
-//            }
-//
-//            if (workStart != null) {
-//                workDay.setWorkStart(new WorkHourDTO());
-//                workDay.getWorkStart().setDate(workStart.getDate());
-//            } 
-//            if (workEnd != null) {
-//                workDay.setWorkEnd(new WorkHourDTO());
-//                workDay.getWorkEnd().setDate(workEnd.getDate());
-//            }
-//            if (lunchStart != null) {
-//                workDay.setLunchStart(new WorkHourDTO());
-//                workDay.getLunchStart().setDate(lunchStart.getDate());
-//            }
-//            if (lunchEnd != null) {
-//                workDay.setLunchEnd(new WorkHourDTO());
-//                workDay.getLunchEnd().setDate(lunchEnd.getDate());
-//            }
-//
-//            // corrections
-//            if (workStart != null && workEnd == null && lastIn != null) {
-//                workDay.setWorkEnd(new WorkHourDTO());
-//                workDay.getWorkEnd().setDate(workStart.getDate().plusMinutes((int) AISService.HOURS_IN_DAY * 60 + 30));
-//                workDay.getWorkEnd().setCorrected(true);
-//                workEnd = new ViewPass();
-//                workEnd.setDate(workDay.getWorkEnd().getDate());
-//                workedMinutes += lastIn.getDate().until(workDay.getWorkEnd().getDate(), ChronoUnit.MINUTES);
-//            }
-//                        
-//            OffsetDateTime defaultWorkEnd = OffsetDateTime.of(LocalDateTime.of(year, month, day, 17, 00),
-//                    OffsetDateTime.now().getOffset());
-//            if (workEnd != null && workEnd.getDate().isAfter(defaultWorkEnd)) {
-//                workedMinutes -= defaultWorkEnd.until(workEnd.getDate(), ChronoUnit.MINUTES);
-//                workDay.getWorkEnd().setDate(defaultWorkEnd);
-//                workDay.getWorkEnd().setCorrected(true);
-//                workEnd = new ViewPass();
-//                workEnd.setDate(workDay.getWorkEnd().getDate());
-//            }
-//            
-//            if (lunchStart != null && lunchEnd == null) {
-//                workDay.setLunchEnd(new WorkHourDTO());
-//                workDay.getLunchEnd().setDate(lunchStart.getDate().plusMinutes(30));
-//                workDay.getLunchEnd().setCorrected(true);
-//                workedMinutes -= 30;
-//            }
-//
-//            if (lunchStart != null && lunchEnd != null && lunchEnd.getDate().isBefore(lunchStart.getDate().plusMinutes(30))) {
-//                workedMinutes -= lunchEnd.getDate().until(lunchStart.getDate(), ChronoUnit.MINUTES) + 30;
-//                lunchEnd.setDate(lunchStart.getDate().plusMinutes(30));
-//                workDay.setLunchEnd(new WorkHourDTO());
-//                workDay.getLunchEnd().setDate(lunchEnd.getDate());
-//                workDay.getLunchEnd().setCorrected(true);
-//            }
-//            
-//            OffsetDateTime defaultLunchStart = OffsetDateTime.of(LocalDateTime.of(year, month, day, 11, 0),
-//                    OffsetDateTime.now().getOffset());
-//            
-//            if (workStart != null && lunchStart == null && lunchEnd == null && workEnd != null  
-//                    && workStart.getDate().until(workEnd.getDate(), ChronoUnit.MINUTES) >= 4*60+30) {
-//                
-//                if (workStart.getDate().isAfter(defaultLunchStart) || workEnd.getDate().isBefore(defaultLunchStart)) {
-//                    defaultLunchStart = workStart.getDate().plusHours(2).truncatedTo(ChronoUnit.HOURS);
-//                }
-//                
-//                workDay.setLunchStart(new WorkHourDTO());
-//                workDay.getLunchStart().setDate(defaultLunchStart);
-//                workDay.getLunchStart().setCorrected(true);
-//                workDay.setLunchEnd(new WorkHourDTO());
-//                workDay.getLunchEnd().setDate(workDay.getLunchStart().getDate().plusMinutes(30));
-//                workDay.getLunchEnd().setCorrected(true);
-//                workedMinutes -= 30;
-//            }
-//            
-//            int dayLightMinutes = month >= 6 && month <= 8 ? 0 : 30;
-//            OffsetDateTime realStart = OffsetDateTime.of(LocalDateTime.of(year, month, day, 6, dayLightMinutes), OffsetDateTime.now().getOffset());
-//            if (workStart != null && workStart.getDate().isBefore(realStart)) {
-//                workDay.getWorkStart().setCorrected(true);
-//                workedMinutes -= workDay.getWorkStart().getDate().until(realStart, ChronoUnit.MINUTES);
-//                workDay.getWorkStart().setDate(realStart);
-//            }
-//
-//            workDay.setWorkedHours(workStart == null ? null
-//                    : BigDecimal.valueOf(workedMinutes / 60d).setScale(2, RoundingMode.FLOOR).doubleValue());
-//            sumOnSiteMinutes += workedMinutes;
-//
-//            double working = 0;
-//            if (workDay.getWork() != null && isWorkingType(workDay.getWork().getWorkType()) && workDay.getWork().getHours() != null) {
-//                working += workDay.getWork().getHours();
-//            }
-//            if (workDay.getWork() != null && isWorkingType(workDay.getWork().getWorkType2()) && workDay.getWork().getHours2() != null) {
-//                working += workDay.getWork().getHours2();
-//            }
-//                        
-//            workDay.setSaldo((workDay.getWorkedHours() == null ? 0 : workDay.getWorkedHours()) - working);
-//            workMonth.addWorkDaysItem(workDay);
-//        }
-//
-//        Map<WorkTypeDTO, WorkDTO> sums = new HashMap<>();
-//        works.stream().filter(w -> w.getWorkType() != null && w.getWorkType() != WorkTypeDTO.NONE
-//                && w.getHours() != null && w.getHours() > 0).forEach(w -> {
-//                    WorkDTO sum = sums.get(w.getWorkType());
-//                    if (sum == null) {
-//                        sum = new WorkDTO();
-//                        sum.setWorkType(w.getWorkType());
-//                        sum.setHours(0d);
-//                        sums.put(w.getWorkType(), sum);
-//                    }
-//                    sum.setHours(sum.getHours().doubleValue() + w.getHours().doubleValue());
-//                });
-//        works.stream().filter(w -> w.getWorkType2() != null && w.getWorkType2() != WorkTypeDTO.NONE
-//                && w.getHours2() != null && w.getHours2() > 0).forEach(w -> {
-//                    WorkDTO sum = sums.get(w.getWorkType2());
-//                    if (sum == null) {
-//                        sum = new WorkDTO();
-//                        sum.setWorkType(w.getWorkType2());
-//                        sum.setHours(0d);
-//                        sums.put(w.getWorkType2(), sum);
-//                    }
-//                    sum.setHours(sum.getHours().doubleValue() + w.getHours2().doubleValue());
-//                });
-//
-//        workMonth.setSums(new ArrayList<>(sums.values()));
-//        workMonth.setSumHolidays(sumHolidays);
-//        workMonth.setSumWorkDays(sumWorkDays);
-//        workMonth.setSumOnSiteDays(BigDecimal.valueOf(sumOnSiteMinutes / 60d / AISService.HOURS_IN_DAY)
-//                .setScale(2, RoundingMode.FLOOR).doubleValue());
+
         return workMonth;
     }
 
@@ -831,6 +639,7 @@ public class AISServiceImpl implements AISService {
     }
         
 
+    @SuppressWarnings("deprecation")
     public void toPdf(XSSFWorkbook my_xls_workbook, OutputStream out) throws DocumentException {
       
         XSSFSheet my_worksheet = my_xls_workbook.getSheetAt(0); 
@@ -886,7 +695,7 @@ public class AISServiceImpl implements AISService {
 
         String yearmonth = year + "." + (month < 10 ? "0":"") + month;
         
-        Sheet sheet = workbook.createSheet(yearmonth + " " + username);
+        XSSFSheet sheet = workbook.createSheet(yearmonth + " " + username);
 
         int row = 0;
         int k = 0;
@@ -1008,7 +817,28 @@ public class AISServiceImpl implements AISService {
 
         createFooter(sheet, false);
         sheet.setFitToPage(true);
-        
+
+        String password= "Veritas03a";
+        sheet.protectSheet(password);
+        sheet.enableLocking();
+                
+        CTSheetProtection sheetProtection = sheet.getCTWorksheet().getSheetProtection();
+        sheetProtection.setSelectLockedCells(true); 
+        sheetProtection.setSelectUnlockedCells(false); 
+        sheetProtection.setFormatCells(true); 
+        sheetProtection.setFormatColumns(true); 
+        sheetProtection.setFormatRows(true); 
+        sheetProtection.setInsertColumns(true); 
+        sheetProtection.setInsertRows(true); 
+        sheetProtection.setInsertHyperlinks(true); 
+        sheetProtection.setDeleteColumns(true); 
+        sheetProtection.setDeleteRows(true); 
+        sheetProtection.setSort(false); 
+        sheetProtection.setAutoFilter(false); 
+        sheetProtection.setPivotTables(true); 
+        sheetProtection.setObjects(true); 
+        sheetProtection.setScenarios(true);
+
         if (out != null) {
             workbook.write(out);
 //            try {
@@ -1016,7 +846,7 @@ public class AISServiceImpl implements AISService {
 //            } catch (DocumentException e) {
 //            }
         }
-        
+       
         return workbook;    
     }
 
