@@ -119,8 +119,12 @@ public class AISServiceImpl implements AISService {
 
     /** National Holidays */
     private static final List<LocalDate> NATIONAL_HOLIDAYS = Arrays.asList(LocalDate.of(2019, 5, 1),
-            LocalDate.of(2019, 5, 8), LocalDate.of(2019, 7, 5), LocalDate.of(2019, 10, 28), LocalDate.of(2019, 12, 24),
-            LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26));
+        LocalDate.of(2019, 5, 8), LocalDate.of(2019, 7, 5), LocalDate.of(2019, 10, 28), LocalDate.of(2019, 11, 17), 
+        LocalDate.of(2019, 12, 24), LocalDate.of(2019, 12, 25), LocalDate.of(2019, 12, 26),
+        LocalDate.of(2020, 1, 1), LocalDate.of(2020, 4, 10), LocalDate.of(2020, 04, 13),
+        LocalDate.of(2020, 5, 1), LocalDate.of(2020, 5, 8), LocalDate.of(2020, 7, 6),
+        LocalDate.of(2020, 9, 28), LocalDate.of(2020, 10, 28), LocalDate.of(2020, 11, 17),
+        LocalDate.of(2020, 12, 24), LocalDate.of(2020, 12, 25), LocalDate.of(2020, 12, 26));
 
     private static final Map<String, String> TRASLATES = new HashMap<>();
     static {
