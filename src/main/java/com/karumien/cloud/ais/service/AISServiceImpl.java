@@ -434,10 +434,10 @@ public class AISServiceImpl implements AISService {
               }              
               
               workDay.setLunch(den.getCelkemPrestavka());
-
-              if (workDay.getDate().getDayOfMonth()==4) {
-                  System.out.println("dd");
-              }
+//
+//              if (workDay.getDate().getDayOfMonth()==29) {
+//                  System.out.println("dd");
+//              }
               
               // correct lunch
               if ((workDay.getLunch() == null || workDay.getLunch() < 0.5) && den.getCelkemPrace() > 4) {
@@ -487,6 +487,10 @@ public class AISServiceImpl implements AISService {
                       workDay.setUnpaid(0d);
                       fixed = true;
                   }
+//                  if (lastCat != null && (lastCat.getCategoryId() == 1)) {
+//                      workDay.setWorkedHours(workDay.getWorkedHours() - workDay.getLunch());
+//                      workDay.setSaldo(workDay.getSaldo() - workDay.getLunch());
+//                  }
               } 
               
               if (!fixed && workDay.getWorkEnd().getDate() != null && workDay.getWorkEnd().getDate().isAfter(globalEnd)) {
