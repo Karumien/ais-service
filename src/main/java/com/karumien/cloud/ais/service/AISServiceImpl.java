@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -375,10 +376,12 @@ public class AISServiceImpl implements AISService {
         for (int day = 1; day <= dateTo.getDayOfMonth(); day++) {
             
           OffsetDateTime globalStart = OffsetDateTime.of(year, month, day, 6, 30, 0, 0, OffsetDateTime.now().getOffset());  
+          OffsetDateTime globalEnd = OffsetDateTime.of(year, month, day, 17, 00, 0, 0, OffsetDateTime.now().getOffset());  
             
           WorkDayDTO workDay = new WorkDayDTO();
           LocalDate date = LocalDate.of(year, month, day);
           workDay.setDate(date);
+          workDay.setUnpaid(0d);
 
           CustomerDataDen den = workMonthMap.get(day);
           workDay.setWorkDayType(getWorkDayType(date, den));                        
@@ -402,7 +405,7 @@ public class AISServiceImpl implements AISService {
           }
 
           if (den != null && workDay.getWorkDayType() == WorkDayTypeDTO.WORKDAY) {
-          
+              
               OffsetDateTime skutecnyPrichod = aDochazkaService.toOffsetDateTime(den.getSkutecnyPrichod().isNil() ? 
                       null : den.getSkutecnyPrichod().getValue());
               OffsetDateTime skutecnyOdchod = aDochazkaService.toOffsetDateTime(den.getSkutecnyOdchod().isNil() ? 
@@ -431,20 +434,27 @@ public class AISServiceImpl implements AISService {
               }              
               
               workDay.setLunch(den.getCelkemPrestavka());
+
+              if (workDay.getDate().getDayOfMonth()==4) {
+                  System.out.println("dd");
+              }
               
               // correct lunch
-              if (workDay.getLunch() == null || workDay.getLunch() < 0.5) {
+              if ((workDay.getLunch() == null || workDay.getLunch() < 0.5) && den.getCelkemPrace() > 4) {
                   workDay.setOriginalLunch(workDay.getLunch() != null ? workDay.getLunch() : 0);
                   workDay.setLunch(0.5d);
+                  workDay.setWorkedHours(workDay.getWorkedHours() - 0.5d);              
+                  workDay.setSaldo(den.getBalanc() - 0.5d);
               }              
               
               OffsetDateTime prichod = aDochazkaService.toOffsetDateTime(den.getPrichod().isNil() ? 
                       null : den.getPrichod().getValue());
               OffsetDateTime odchod = aDochazkaService.toOffsetDateTime(den.getOdchod().isNil() ? null : den.getOdchod().getValue());
-                            
+              
               if (prichod != null && prichod.isBefore(globalStart) 
                   || workDay.getWorkStart() != null && workDay.getWorkStart().getDate() != null 
                   && workDay.getWorkStart().getDate().isBefore(globalStart)) {
+                  workDay.setUnpaid(workDay.getUnpaid() + ChronoUnit.SECONDS.between(prichod, globalStart) / 3600d);
                   prichod = globalStart;
               }
               
@@ -460,14 +470,30 @@ public class AISServiceImpl implements AISService {
                   workDay.getWorkEnd().setCorrected(odchod == null);
               }
               
+              boolean fixed = false;
+              
               // fix last 
               if (prichod != null && skutecnyOdchod == null && (workDay.getTrip().doubleValue() > 0 || workDay.getSick() > 0)) {
-                  workDay.getWorkEnd().setOriginal(odchod);
-                  odchod = prichod.plusMinutes((long) (workDay.getLunch() * 60d)).plusHours(8);
-                  workDay.getWorkEnd().setDate(odchod);
+                  
+                  List<PassDTO> accesses = getAccesses(workDay.getDate(), username);
+                  PassDTO lastCat = accesses.size() > 0 ? accesses.get(accesses.size()-1) : null;
+                  if (lastCat != null && (lastCat.getCategoryId() == 4 || lastCat.getCategoryId() == 5)) {
+                      workDay.getWorkEnd().setOriginal(odchod);
+                      odchod = prichod.plusMinutes((long) (workDay.getLunch() * 60d)).plusHours(8);
+                      workDay.getWorkEnd().setDate(odchod);
+                      workDay.getWorkEnd().setCorrected(true);
+                      workDay.setSaldo(0d);
+                      workDay.setWorkedHours(8d);
+                      workDay.setUnpaid(0d);
+                      fixed = true;
+                  }
+              } 
+              
+              if (!fixed && workDay.getWorkEnd().getDate() != null && workDay.getWorkEnd().getDate().isAfter(globalEnd)) {
+                  workDay.setUnpaid(workDay.getUnpaid() + ChronoUnit.SECONDS.between(globalEnd, workDay.getWorkEnd().getDate()) / 3600d);
+                  workDay.getWorkEnd().setOriginal(workDay.getWorkEnd().getDate());
+                  workDay.getWorkEnd().setDate(globalEnd);
                   workDay.getWorkEnd().setCorrected(true);
-                  workDay.setSaldo(0d);
-                  workDay.setWorkedHours(8d);
               }
               
               sumWork += workDay.getWorkedHours();              
@@ -740,11 +766,13 @@ public class AISServiceImpl implements AISService {
 
         row++;
         
+        int startRow = row;
+        
         createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TH), 
                 "Souhrn", "");
 
         int index = 0;
-
+        
         // Fond
         Row rowCell = sheet.createRow(row++);
         Cell cell = rowCell.createCell(index++, CellType.STRING);
@@ -753,10 +781,12 @@ public class AISServiceImpl implements AISService {
         
         cell = rowCell.createCell(index++, CellType.NUMERIC);
         cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-        cell.setCellValue((selectedUser.getFond() == null ? workMonthDTO.getSumWorkDays() : workMonthDTO.getSumWorkDays() * fond) * HOURS_IN_DAY);
+        double fondOfUser = (selectedUser.getFond() == null ? workMonthDTO.getSumWorkDays() : workMonthDTO.getSumWorkDays() * fond) * HOURS_IN_DAY;
+        cell.setCellValue(fondOfUser);
 
         // Svátky
         index = 0;
+        double holidays = 0;
         
         if (workMonthDTO.getSumHolidays() != null && workMonthDTO.getSumHolidays() > 0) {
             rowCell = sheet.createRow(row++);
@@ -766,8 +796,21 @@ public class AISServiceImpl implements AISService {
             
             cell = rowCell.createCell(index++, CellType.NUMERIC);
             cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-            cell.setCellValue(workMonthDTO.getSumHolidays() * HOURS_IN_DAY);
+            holidays = workMonthDTO.getSumHolidays() * HOURS_IN_DAY;
+            cell.setCellValue(holidays);
         }
+        
+        index = 0;
+        
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(index++, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_SILVER));
+        cell.setCellValue("Celkem");
+        
+        cell = rowCell.createCell(index++, CellType.NUMERIC);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_SILVER_PRICE));
+        cell.setCellValue(fondOfUser + holidays);
+        
         
         // Aditus
 //        index = 0;
@@ -779,20 +822,35 @@ public class AISServiceImpl implements AISService {
 //        cell = rowCell.createCell(index++, CellType.NUMERIC);
 //        cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
 //        cell.setCellValue(workMonthDTO.getSumOnSiteDays());
+
+        double sumOther = holidays;
         
         for (WorkDTO work : workMonthDTO.getSums()) {
             index = 0;
-            rowCell = sheet.createRow(row++);
-            cell = rowCell.createCell(index++, CellType.STRING);
-            cell.setCellStyle(styles.get(ExcelStyleType.TD));
-            cell.setCellValue(getDescription(work.getWorkType()));
-            
-            cell = rowCell.createCell(index++, CellType.NUMERIC);
-            cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
-            cell.setCellValue(work.getHours() == null ? null : work.getHours());
+            if (work.getHours() != null) {
+                rowCell = sheet.createRow(row++);
+                cell = rowCell.createCell(index++, CellType.STRING);
+                cell.setCellStyle(styles.get(ExcelStyleType.TD));
+                cell.setCellValue(getDescription(work.getWorkType()));
+                
+                cell = rowCell.createCell(index++, CellType.NUMERIC);
+                cell.setCellStyle(styles.get(ExcelStyleType.TD_PRICE));
+                cell.setCellValue(work.getHours());            
+                sumOther += work.getHours();
+            }
         }
-        
 
+        index = 0;
+        rowCell = sheet.createRow(row++);
+        cell = rowCell.createCell(index++, CellType.STRING);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_SILVER));
+        cell.setCellValue("Celkem");
+        
+        cell = rowCell.createCell(index++, CellType.NUMERIC);
+        cell.setCellStyle(styles.get(ExcelStyleType.TD_SILVER_PRICE));
+        cell.setCellValue(sumOther);
+
+        
         rowCell = sheet.createRow(row++);
         rowCell = sheet.createRow(row++);
 
@@ -1003,6 +1061,7 @@ public class AISServiceImpl implements AISService {
 //        styleTD.setBottomBorderColor(COLOR_SILVER);
         styles.put(ExcelStyleType.TD, styleTD);
 
+        
         XSSFCellStyle styleTDPrice = workbook.createCellStyle();
         styleTDPrice.setFont(fontValue);
         styleTDPrice.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -1013,6 +1072,27 @@ public class AISServiceImpl implements AISService {
 //        styleTDPrice.setBottomBorderColor(COLOR_SILVER);
         styles.put(ExcelStyleType.TD_PRICE, styleTDPrice);
 
+        XSSFCellStyle styleTDSilver = workbook.createCellStyle();
+        styleTDSilver.setFont(fontValue);
+        styleTDSilver.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTDSilver.setFillForegroundColor(COLOR_SILVER);
+        styleTDSilver.setWrapText(false);
+//        styleTD.setBorderBottom(BorderStyle.THIN);
+//        styleTD.setBottomBorderColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.TD_SILVER, styleTDSilver);
+
+        
+        XSSFCellStyle styleTDSilverPrice = workbook.createCellStyle();
+        styleTDSilverPrice.setFont(fontValue);
+        styleTDSilverPrice.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        styleTDSilverPrice.setFillForegroundColor(COLOR_SILVER);
+        styleTDSilverPrice.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+        styleTDSilverPrice.setAlignment(HorizontalAlignment.RIGHT);
+//        styleTDPrice.setBorderBottom(BorderStyle.THIN);
+//        styleTDPrice.setBottomBorderColor(COLOR_SILVER);
+        styles.put(ExcelStyleType.TD_SILVER_PRICE, styleTDSilverPrice);
+
+        
         XSSFCellStyle styleValuePrice = workbook.createCellStyle();
         styleValuePrice.setFont(fontValue);
         styleValuePrice.setFillPattern(FillPatternType.SOLID_FOREGROUND);

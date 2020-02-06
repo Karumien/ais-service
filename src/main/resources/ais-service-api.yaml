@@ -262,6 +262,9 @@ definitions:
       payed:
         type: number
         format: double
+      unpaid:
+        type: number
+        format: double
       work:
         $ref: "#/definitions/Work"
     example:

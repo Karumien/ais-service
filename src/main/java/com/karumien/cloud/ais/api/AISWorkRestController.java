@@ -270,6 +270,8 @@ public class AISWorkRestController implements WorkApi {
 
         double fond = selectedUser.getFond() != null ? selectedUser.getFond() / 100d : 1d;
         double saldo = 0;
+        double unpaid = 0;
+        
                 
         WorkMonthDTO workMonthDTO = aisService.getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
@@ -330,6 +332,10 @@ public class AISWorkRestController implements WorkApi {
                     }
                     if (workDay.getPayed() != null && workDay.getPayed() > 0) {
                         adv += "Placené volno :  " + aisService.hours(workDay.getPayed(), false) + "\n";
+                    }
+                    if (workDay.getUnpaid() != null && workDay.getUnpaid() > 0) {
+                        adv += "Neuznaný přesčas :  " + aisService.hours(workDay.getUnpaid(), false) + "\n";
+                        unpaid += workDay.getUnpaid();
                     }
                     
                     sb.append("<td class=\"i24_tableItem\" align=\"left\"><div "
@@ -428,12 +434,20 @@ public class AISWorkRestController implements WorkApi {
                 selectedUser.getFond() == null ? aisService.days(workMonthDTO.getSumWorkDays()) : 
                     aisService.days(workMonthDTO.getSumWorkDays() * fond) + "</b> / " + aisService.days(workMonthDTO.getSumWorkDays())
         ).append("</b></td>");
-        
 
+        sb1.append("<td class=\"i24_tableItem\" style=\"background-color: #EFEFEF\"><i>").append("Celkem").append("</i></td>");
+        sb2.append("<td class=\"i24_tableItem\" style=\"background-color: #EFEFEF\"><b>").append(aisService.days(workMonthDTO.getSumHolidays() +
+                workMonthDTO.getSumWorkDays())).append("</b></td>");
+        
         if (uzivatel != null) {
             sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Saldo ke konci včerejšího dne\">").append("ADocházka (?)").append("</i></td>");        
             sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(workMonthDTO.getSumOnSiteDays())).append("</b> (" + 
                     saldo( saldo )).append(")</td>");
+            if (unpaid > 0) {
+                sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Neuznaný přesčas\">").append("Neuznáno (?)").append("</i></td>");        
+                sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(unpaid )).append("</td>");
+            }
+            
         }
         
         double worked = 0;
@@ -450,16 +464,24 @@ public class AISWorkRestController implements WorkApi {
         
         sb1.append("<td class=\"i24_tableItem\"><i><b>").append("Odpracováno").append("</b></i></td>");
         sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.days(worked)).append("</b></td>");
-                
+        
+        double sum = workMonthDTO.getSumHolidays() + worked;
+        
         // non-work types
         for (WorkDTO work : workMonthDTO.getSums()) {
             if (!aisService.isWorkingType(work.getWorkType())) {
+                double val = work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY;
                 sb1.append("<td class=\"i24_tableItem\"><i>").append(aisService.getDescription(work.getWorkType())).append("</i></td>");
                 sb2.append("<td class=\"i24_tableItem\"><b>")
-                        .append(aisService.days(work.getHours() == null ? null : work.getHours() / AISService.HOURS_IN_DAY)).append("</b></td>");
+                        .append(aisService.days(val)).append("</b></td>");
+                sum += val;
             }
         }
 
+        sb1.append("<td class=\"i24_tableItem\" style=\"background-color: #EFEFEF\"><i>").append("Celkem").append("</i></td>");
+        sb2.append("<td class=\"i24_tableItem\" style=\"background-color: #EFEFEF\"><b>").append(aisService.days(sum)).append("</b></td>");
+
+        
 //        if (uzivatel != null) {
 //            sb1.append("<td class=\"i24_tableItem\"><i>").append("Saldo").append("</i></td>");
 //            sb2.append("<td class=\"i24_tableItem\"><b>").append(saldo(workMonthDTO.getSumOnSiteDays() - worked * AISService.HOURS_IN_DAY)).append("</b></td>");
