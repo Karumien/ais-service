@@ -242,9 +242,11 @@ public class AISWorkRestController implements WorkApi {
             sb.append("<option value=\"").append(user.getUsername()).append("\"").append(username.equals(user.getUsername()) ? " selected" : "");
             sb.append(">").append(user.getName()).append("</option>");            
         }
+        
+        boolean schval = Boolean.TRUE.equals(roleUser.isRoleAdmin()) || Boolean.TRUE.equals(roleUser.isRoleHip());
                 
         sb.append("</select></td><td></td><td align=\"right\">");
-        if (!readonly && ((Boolean.TRUE.equals(roleUser.isRoleAdmin()) || Boolean.TRUE.equals(roleUser.isRoleHip())) && !currentMonth && selectedMonthDay.isBefore(actualMonthDay))) {
+        if (!readonly &&  schval && !currentMonth && selectedMonthDay.isBefore(actualMonthDay)) {
             sb.append("<a href=\"#\" class=\"buttonSubmit\" title=\"Schválit vybraný měsíc dané osobě\">&nbsp; Schválit</a>");
         }
         sb.append("&nbsp;<a href=\"/works.do?action=list&object=native_works&clear=1\" target=\"_parent\" class=\"buttonSubmit\">&nbsp; Výkazy zakázky</a></td></tr></form>");                
@@ -333,7 +335,7 @@ public class AISWorkRestController implements WorkApi {
                     if (workDay.getPayed() != null && workDay.getPayed() > 0) {
                         adv += "Placené volno :  " + aisService.hours(workDay.getPayed(), false) + "\n";
                     }
-                    if (workDay.getUnpaid() != null && workDay.getUnpaid() > 0) {
+                    if (workDay.getUnpaid() != null && workDay.getUnpaid() > 0 && schval) {
                         adv += "Neuznaný přesčas :  " + aisService.hours(workDay.getUnpaid(), false) + "\n";
                         unpaid += workDay.getUnpaid();
                     }
@@ -443,7 +445,7 @@ public class AISWorkRestController implements WorkApi {
             sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Saldo ke konci včerejšího dne\">").append("ADocházka (?)").append("</i></td>");        
             sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(workMonthDTO.getSumOnSiteDays())).append("</b> (" + 
                     saldo( saldo )).append(")</td>");
-            if (unpaid > 0) {
+            if (unpaid > 0 && schval) {
                 sb1.append("<td class=\"i24_tableItem\" style=\"#888888\"><i title=\"Neuznaný přesčas\">").append("Neuznáno (?)").append("</i></td>");        
                 sb2.append("<td class=\"i24_tableItem\"><b>").append(aisService.hours(unpaid )).append("</td>");
             }

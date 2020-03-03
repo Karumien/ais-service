@@ -394,13 +394,15 @@ public class AISServiceImpl implements AISService {
             sumWorkDays++;
             if (generateWorks) {
                 Work work = new Work();
+                
                 work.setUsername(username);
                 work.setDate(date);
-                work.setHours(AISService.HOURS_IN_DAY);
                 work.setWorkDayType(WorkDayTypeDTO.WORKDAY);
+
+                work.setHours(AISService.HOURS_IN_DAY);
                 work.setWorkType(WorkTypeDTO.WORK);
-                workRepository.save(work);
-                works.add(work);
+
+                works.add(workRepository.save(work));
             }
           }
 
@@ -743,6 +745,7 @@ public class AISServiceImpl implements AISService {
         sheet.setColumnWidth(k++, 70 * PX);
         sheet.setColumnWidth(k++, 70 * PX);
         sheet.setColumnWidth(k++, 100 * PX);
+        sheet.setColumnWidth(k++, 200 * PX);
 
         createSimpleRow(sheet, row++, styles.get(ExcelStyleType.H1), 
                 yearmonth, selectedUser.getName(),
@@ -750,7 +753,7 @@ public class AISServiceImpl implements AISService {
         
         row++;
         createSimpleRow(sheet, row++, styles.get(ExcelStyleType.TH), 
-                "datum", "kategorie", "příchod", "oběd/přestávky", "odchod", "celkem", "výkazy", "");
+                "datum", "kategorie", "příchod", "oběd/přestávky", "odchod", "celkem", "výkazy", "", "poznámka (hodiny/zakázka)");
 
         WorkMonthDTO workMonthDTO = getWorkDays(year, month, username);
         for (WorkDayDTO workDay : workMonthDTO.getWorkDays()) {
@@ -761,11 +764,12 @@ public class AISServiceImpl implements AISService {
                     date(workDay.getDate()), getDescription(workDay.getWorkDayType()), hoursOnly(workDay.getWorkStart()), 
                     hours(workDay.getLunch()), 
                     hoursOnly(workDay.getWorkEnd()), hours(workDay.getWorkedHours()),                     
-                    work != null ? hours(work.getHours()) : "", work != null ? getDescription(work.getWorkType()) : "");
+                    work != null ? hours(work.getHours()) : "", work != null ? getDescription(work.getWorkType()) : "", 
+                    work != null && !StringUtils.isEmpty(work.getDescription()) ? work.getDescription() : "");
 
             createSimpleRow(sheet, row++, styles.get(ExcelStyleType.VALUE), styles.get(ExcelStyleType.VALUE_PRICE),    
                     "", "", "", "", "", "", 
-                    work != null ? hours(work.getHours2()) : "", work != null ? getDescription(work.getWorkType2()) : "");
+                    work != null ? hours(work.getHours2()) : "", work != null ? getDescription(work.getWorkType2()) : "", "");
         }        
 
         row++;
