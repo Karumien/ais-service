@@ -27,6 +27,7 @@ insert into AIS_USERNAME(OSCISLO, UZIVJMENO, ROLE_ADMIN, ROLE_HIP, FOND) values 
 insert into AIS_USERNAME(OSCISLO, UZIVJMENO, ROLE_ADMIN, ROLE_HIP, FOND) values (171, 'benes', 0, 0, 0);
 insert into AIS_USERNAME(OSCISLO, UZIVJMENO) values (20, 'sochorova');
 insert into AIS_USERNAME(OSCISLO, UZIVJMENO, ROLE_ADMIN, ROLE_HIP, FOND) values (33, 'stieberova', 1, 0, null);
+insert into AIS_USERNAME(OSCISLO, UZIVJMENO) values (777, 'micka');
 
 
 create table AIS_WORK (
