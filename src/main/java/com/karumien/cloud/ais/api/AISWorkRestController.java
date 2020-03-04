@@ -139,13 +139,13 @@ public class AISWorkRestController implements WorkApi {
             username = role;
         }        
         
-        if (month < 4) {
-            year = LocalDate.now().getYear();
-        } 
-        
-        if (month > 3) {
-            year = LocalDate.now().getYear()-1;
-        } 
+//        if (month < 4) {
+//            year = LocalDate.now().getYear();
+//        } 
+//        
+//        if (month > 3) {
+//            year = LocalDate.now().getYear()-1;
+//        } 
 
         LocalDate actualMonthDay = LocalDate.now();
         LocalDate previousMonthDay = LocalDate.now().withDayOfMonth(1).minusMonths(1);
@@ -228,7 +228,7 @@ public class AISWorkRestController implements WorkApi {
             sb.append(">").append(months.get(i)).append("</option>");
         }
         sb.append("</select><select class=\"unvisiblelines\" onchange=\"this.form.submit()\">");
-        for (int i = 2019; i <= LocalDate.now().getYear() ;i++) {
+        for (int i = 2020; i <= LocalDate.now().getYear() ;i++) {
             sb.append("<option" + (LocalDate.now().getYear() == year ? " selected" : "") + ">"+ i + "</option>");
         }
         sb.append("</select>");

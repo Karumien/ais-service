@@ -128,17 +128,17 @@ public class AISServiceImpl implements AISService {
         LocalDate.of(2020, 9, 28), LocalDate.of(2020, 10, 28), LocalDate.of(2020, 11, 17),
         LocalDate.of(2020, 12, 24), LocalDate.of(2020, 12, 25), LocalDate.of(2020, 12, 26));
 
-    private static final Map<String, String> TRASLATES = new HashMap<>();
+    private static final Map<String, String> TRANSLATES = new HashMap<>();
     static {
-        TRASLATES.put("Prace", "V kanceláři");
-        TRASLATES.put("SluzebniCesta", "Služební cesta");
-        TRASLATES.put("Prestavka", "Přestávka/Oběd");
-        TRASLATES.put("Odchod", "Odchod z práce");
-        TRASLATES.put("Lekar", "Lékař");
-        TRASLATES.put("Pohreb", "Pohřeb");
-        TRASLATES.put("Svatba", "Svatba");
-        TRASLATES.put("OTISK_PRSTU", "Otisk");
-        TRASLATES.put("CIPOVA_KARTA", "Čip");
+        TRANSLATES.put("Prace", "V kanceláři");
+        TRANSLATES.put("SluzebniCesta", "Služební cesta");
+        TRANSLATES.put("Prestavka", "Přestávka/Oběd");
+        TRANSLATES.put("Odchod", "Odchod z práce");
+        TRANSLATES.put("Lekar", "Lékař");
+        TRANSLATES.put("Pohreb", "Pohřeb");
+        TRANSLATES.put("Svatba", "Svatba");
+        TRANSLATES.put("OTISK_PRSTU", "Otisk");
+        TRANSLATES.put("CIPOVA_KARTA", "Čip");
     }
 
     private static final Map<Integer, String> KEYBOARD = new HashMap<>();
@@ -246,7 +246,7 @@ public class AISServiceImpl implements AISService {
             pass.setCategoryId(klavesa);
             pass.setCategory(KEYBOARD.get(klavesa));
             pass.setPerson(user);
-            pass.setChip(TRASLATES.get(pristup.getTypVerifikace().toString()));
+            pass.setChip(TRANSLATES.get(pristup.getTypVerifikace().toString()));
             passes.add(pass);
         }                    
                     
@@ -299,7 +299,7 @@ public class AISServiceImpl implements AISService {
     }
 
     private static String toCategory(String value) {
-        return TRASLATES.containsKey(value) ? TRASLATES.get(value) : value; 
+        return TRANSLATES.containsKey(value) ? TRANSLATES.get(value) : value; 
     }
 
     private static Integer toCategoryId(String value) {
@@ -399,9 +399,12 @@ public class AISServiceImpl implements AISService {
                 work.setDate(date);
                 work.setWorkDayType(WorkDayTypeDTO.WORKDAY);
 
-                work.setHours(AISService.HOURS_IN_DAY);
-                work.setWorkType(WorkTypeDTO.WORK);
-
+                // contractors
+                if (den == null) {
+                  work.setHours(AISService.HOURS_IN_DAY);
+                  work.setWorkType(WorkTypeDTO.WORK);
+                }
+                    
                 works.add(workRepository.save(work));
             }
           }
@@ -436,13 +439,13 @@ public class AISServiceImpl implements AISService {
               }              
               
               workDay.setLunch(den.getCelkemPrestavka());
-//
-//              if (workDay.getDate().getDayOfMonth()==29) {
+
+//              if (workDay.getDate().getDayOfMonth()==17) {
 //                  System.out.println("dd");
 //              }
               
               // correct lunch
-              if ((workDay.getLunch() == null || workDay.getLunch() < 0.5) && den.getCelkemPrace() > 4) {
+              if (((workDay.getLunch() == null || workDay.getLunch() == 0) && den.getCelkemPrace() > 4.5d || workDay.getLunch() < 0.5 && workDay.getLunch() > 0 ) ) {
                   workDay.setOriginalLunch(workDay.getLunch() != null ? workDay.getLunch() : 0);
                   workDay.setLunch(0.5d);
                   workDay.setWorkedHours(workDay.getWorkedHours() - 0.5d);              
@@ -502,9 +505,44 @@ public class AISServiceImpl implements AISService {
                   workDay.getWorkEnd().setCorrected(true);
               }
               
-              sumWork += workDay.getWorkedHours();              
-          }
+              sumWork += workDay.getWorkedHours();  
 
+              // generate history
+              if (workDay.getDate().isBefore(LocalDate.now().atStartOfDay().toLocalDate())) {
+
+                  Optional<Work> work = works.stream().filter(w -> w.getDate().equals(workDay.getDate())).findFirst();
+                  if (work.isPresent() && StringUtils.isEmpty(work.get().getDescription())
+                          && work.get().getWorkType() == WorkTypeDTO.NONE && work.get().getWorkType2() == WorkTypeDTO.NONE) {
+                      
+                      // generate RPA
+                      Work worked = work.get();
+                      Double sumBase = 0d;
+                                            
+                      if (workDay.getSick() > 0) {
+                          sumBase = round(workDay.getSick());
+                          worked.setHours2(sumBase);
+                          worked.setWorkType2(WorkTypeDTO.SICKNESS); 
+                      } else {
+                          if (workDay.getTrip() > 0) {
+                              sumBase = round(workDay.getTrip());
+                              worked.setHours2(sumBase);
+                              worked.setWorkType2(WorkTypeDTO.TRIP);                          
+                          }
+                      }
+                      
+                      if (workDay.getWorkedHours() == 0) {
+                          worked.setHours(AISService.HOURS_IN_DAY);
+                          worked.setWorkType(WorkTypeDTO.HOLIDAY);
+                      } else {
+                          worked.setHours(AISService.HOURS_IN_DAY - sumBase);
+                          worked.setWorkType(WorkTypeDTO.WORK);
+                      }
+                      
+                      workRepository.save(worked);
+                  }
+              }
+              
+          }
           
           Work worked = works.stream().filter(w -> w.getDate().equals(date)).findFirst().orElse(null);
           if (worked != null) {
@@ -547,6 +585,17 @@ public class AISServiceImpl implements AISService {
         return workMonth;
     }
 
+
+    private Double round(Double origin) {        
+        double base = Math.floor(origin);
+        if (origin - base > .25d) {
+            base += .5;
+        }
+        if (origin - base > .25d) {
+            base += .5;
+        }        
+        return base == 0 ? .5d : base;
+    }
 
     private boolean isDifferent(@Valid OffsetDateTime real, OffsetDateTime computed) {
         if (computed == null) {
