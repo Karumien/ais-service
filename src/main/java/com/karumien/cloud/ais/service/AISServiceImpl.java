@@ -434,6 +434,11 @@ public class AISServiceImpl implements AISService {
               workDay.setWorkedHours(den.getCelkemPrace() + workDay.getSick());              
               workDay.setSaldo(den.getBalanc());
               
+              if (month >= 6 && year >= 2020) {
+                  workDay.setWorkedHours(den.getCelkemNaPracovisti() + den.getCelkemSluzebniCesta());              
+                  workDay.setSaldo(workDay.getWorkedHours()-8);
+              }
+                            
               // today
               if (LocalDate.now().equals(workDay.getDate())) {
                   workDay.setSaldo(0d);
@@ -479,7 +484,7 @@ public class AISServiceImpl implements AISService {
               boolean fixed = false;
               
               // fix last 
-              if (prichod != null && skutecnyOdchod == null && (workDay.getTrip().doubleValue() > 0 || workDay.getSick() > 0)) {
+              if (prichod != null && skutecnyOdchod == null) {// && (workDay.getTrip().doubleValue() > 0 || workDay.getSick() > 0)) {
                   
                   List<PassDTO> accesses = getAccesses(workDay.getDate(), username);
                   PassDTO lastCat = accesses.size() > 0 ? accesses.get(accesses.size()-1) : null;
