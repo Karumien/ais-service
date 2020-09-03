@@ -376,7 +376,7 @@ public class AISServiceImpl implements AISService {
         for (int day = 1; day <= dateTo.getDayOfMonth(); day++) {
             
           OffsetDateTime globalStart = OffsetDateTime.of(year, month, day, 6, 
-                  (month < 6 && year >= 2020) ? 30 : 0, 0, 0, OffsetDateTime.now().getOffset());  
+                  (month < 6 || month > 8) ? 30 : 0, 0, 0, OffsetDateTime.now().getOffset());  
           OffsetDateTime globalEnd = OffsetDateTime.of(year, month, day, 17, 00, 0, 0, OffsetDateTime.now().getOffset());  
             
           WorkDayDTO workDay = new WorkDayDTO();
