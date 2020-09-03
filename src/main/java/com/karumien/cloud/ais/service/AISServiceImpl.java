@@ -434,7 +434,7 @@ public class AISServiceImpl implements AISService {
               workDay.setWorkedHours(den.getCelkemPrace() + workDay.getSick());              
               workDay.setSaldo(den.getBalanc());
               
-              if (month >= 6 && year >= 2020) {
+              if (month >= 6 && month <= 8) {
                   workDay.setWorkedHours(den.getCelkemNaPracovisti() + den.getCelkemSluzebniCesta());              
                   workDay.setSaldo(workDay.getWorkedHours()-8);
               }
