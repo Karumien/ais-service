@@ -281,9 +281,12 @@ public class AISServiceImpl implements AISService {
                 user.setDepartment(oddeleni != null ? oddeleni.getNazev().getValue(): null);
             
                 PassDTO pass = new PassDTO();
+                
                 pass.setDate(aDochazkaService.toOffsetDateTime(p.getDatum()));
-                pass.setCategory(toCategory("Odchod"));
-                pass.setCategoryId(120);
+                pass.setCategoryId(p.getKlavesa1().getValue());
+                pass.setCategory(KEYBOARD.get(p.getKlavesa1().getValue()));
+//                pass.setCategory(toCategory("Odchod"));
+//                pass.setCategoryId(120);
                 pass.setPerson(user);
     
                 found.add(pass);
