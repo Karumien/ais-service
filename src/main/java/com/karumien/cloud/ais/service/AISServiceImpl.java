@@ -278,7 +278,7 @@ public class AISServiceImpl implements AISService {
                 user.setId(user.getCode());
                 
                 Oddeleni oddeleni = u.getOddeleni().getValue().getOddeleni().stream().findFirst().orElse(null); 
-                user.setDepartment(oddeleni != null ? oddeleni.getNazev().getValue(): null);
+                user.setDepartment(oddeleni != null ? oddeleni.getNazev().getValue(): "");
             
                 PassDTO pass = new PassDTO();
                 
