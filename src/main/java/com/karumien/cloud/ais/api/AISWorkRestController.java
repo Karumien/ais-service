@@ -139,14 +139,19 @@ public class AISWorkRestController implements WorkApi {
             username = role;
         }        
         
-//        if (month <= 11) {
-//            year = LocalDate.now().getYear();
-//        } 
+        if (month < 4) {
+            year = LocalDate.now().getYear();
+        } 
         
-        if (month > 11 && LocalDate.now().getMonthValue() <= 11) {
+        if (month > 3) {
             year = LocalDate.now().getYear()-1;
         } 
 
+//        if (month > 11 && LocalDate.now().getMonthValue() <= 11) {
+//            year = LocalDate.now().getYear()-1;
+//        } 
+
+        
         LocalDate actualMonthDay = LocalDate.now();
         LocalDate previousMonthDay = LocalDate.now().withDayOfMonth(1).minusMonths(1);
         
