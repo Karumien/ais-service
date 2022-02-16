@@ -85,8 +85,8 @@ public class AISPassRestController implements PassApi {
                 }
                 
                 sb.append("<tr>")
-                    .append("</td><td class=\"i24_tableItem\">").append(p.getDate().format(DateTimeFormatter.ofPattern("HH:mm")))
-                    .append("</td><td class=\"i24_tableItem\">").append(p.getPerson() == null ? "" : p.getPerson().getDepartment())
+                    .append("</td><td class=\"i24_tableItem\">").append(p.getDate() == null ? "": p.getDate().format(DateTimeFormatter.ofPattern("HH:mm")))
+                    .append("</td><td class=\"i24_tableItem\">").append(p.getPerson() == null ? "" : (p.getPerson().getDepartment() == null ? "": p.getPerson().getDepartment()))
                     .append("</td><td class=\"i24_tableItem\">").append(p.getCategoryId() == 1 && p.getPerson() != null ? "<b>" : "")
                     .append(p.getPerson() == null ? "<i>&lt;neznámý&gt;</i>" : p.getPerson().getName())
                     .append(p.getCategoryId() == 1 && p.getPerson() != null ? "</b>" : "")
