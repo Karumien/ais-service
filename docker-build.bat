@@ -1,0 +1,1 @@
+docker build . -t karumien/ais-service:latest
